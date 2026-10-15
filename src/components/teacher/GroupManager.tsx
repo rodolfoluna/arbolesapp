@@ -15,6 +15,7 @@ import {
   resetStudentPassword,
   type CreateResult,
 } from '../../lib/accounts';
+import { normalizeControlNumber } from '../../lib/firebase';
 import { ConfirmDialog, Modal, PageHeader, Spinner, cx } from '../ui';
 
 export function GroupManager() {
@@ -30,6 +31,20 @@ export function GroupManager() {
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
   const [isCreatingUsers, setIsCreatingUsers] = useState(false);
   const [createProgress, setCreateProgress] = useState<{ done: number; total: number } | null>(null);
+
+  // Alta directa de alumno individual
+  const [isSingleStudentModalOpen, setIsSingleStudentModalOpen] = useState(false);
+  const [singleCn, setSingleCn] = useState('');
+  const [singleFullName, setSingleFullName] = useState('');
+  const [singleGroupId, setSingleGroupId] = useState('');
+  const [isAddingSingleStudent, setIsAddingSingleStudent] = useState(false);
+  const [singleStudentSuccess, setSingleStudentSuccess] = useState<{
+    controlNumber: string;
+    fullName: string;
+    tempPassword?: string;
+  } | null>(null);
+  const [copiedTemp, setCopiedTemp] = useState(false);
+
   const [resettingStudent, setResettingStudent] = useState<UserProfile | null>(null);
   const [resetSuccessPass, setResetSuccessPass] = useState<string | null>(null);
   const [editingStudent, setEditingStudent] = useState<UserProfile | null>(null);
@@ -139,6 +154,46 @@ export function GroupManager() {
     }
   };
 
+  const handleAddSingleStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cn = normalizeControlNumber(singleCn);
+    const name = singleFullName.trim();
+    if (!cn || !name) {
+      alert('Por favor introduce el número de control y el nombre completo.');
+      return;
+    }
+
+    setIsAddingSingleStudent(true);
+    try {
+      const targetGroupIds = singleGroupId ? [singleGroupId] : (selectedGroupId ? [selectedGroupId] : []);
+      const results = await createStudents(
+        [{ controlNumber: cn, fullName: name }],
+        students,
+        targetGroupIds
+      );
+
+      const res = results[0];
+      if (res.status === 'created') {
+        setSingleStudentSuccess({
+          controlNumber: res.controlNumber,
+          fullName: res.fullName,
+          tempPassword: res.tempPassword,
+        });
+        setSingleCn('');
+        setSingleFullName('');
+        setIsSingleStudentModalOpen(false);
+      } else if (res.status === 'exists') {
+        alert(`El alumno con número de control ${cn} ya está registrado en el sistema.`);
+      } else {
+        alert('Error al registrar alumno: ' + (res.message || 'Error desconocido'));
+      }
+    } catch (err) {
+      alert('Error al crear alumno: ' + err);
+    } finally {
+      setIsAddingSingleStudent(false);
+    }
+  };
+
   const handleDownloadAllCredentials = async () => {
     try {
       const creds = await fetchCredentials();
@@ -160,7 +215,7 @@ export function GroupManager() {
     <div className="space-y-6">
       <PageHeader
         title="Gestión de Grupos y Alumnos"
-        subtitle="Administra tus clases, da de alta alumnos con CSV y gestiona sus contraseñas."
+        subtitle="Administra tus clases, da de alta alumnos directamente o con CSV, y gestiona sus contraseñas."
         actions={
           <div className="flex flex-wrap gap-2">
             <button
@@ -171,10 +226,20 @@ export function GroupManager() {
               📥 Descargar Credenciales
             </button>
             <button
-              onClick={() => setIsCsvModalOpen(true)}
+              id="btn-add-single-student"
+              onClick={() => {
+                setSingleGroupId(selectedGroupId);
+                setIsSingleStudentModalOpen(true);
+              }}
               className="btn-primary text-xs font-semibold"
             >
-              📤 Subir Alumnos por CSV
+              + Añadir Alumno
+            </button>
+            <button
+              onClick={() => setIsCsvModalOpen(true)}
+              className="btn-secondary text-xs font-semibold"
+            >
+              📤 Subir por CSV
             </button>
             <button
               onClick={() => setIsNewGroupOpen(true)}
@@ -229,11 +294,39 @@ export function GroupManager() {
               ({studentsInGroup.length})
             </span>
           </div>
+          <button
+            onClick={() => {
+              setSingleGroupId(selectedGroupId);
+              setIsSingleStudentModalOpen(true);
+            }}
+            className="btn-secondary btn-sm text-xs"
+          >
+            + Añadir Alumno
+          </button>
         </div>
 
         {studentsInGroup.length === 0 ? (
           <div className="p-8 text-center text-sm text-slate-500">
-            No hay alumnos en este grupo. Sube un archivo CSV con las columnas <b className="text-slate-300">NumeroControl, Nombre</b> para dar de alta a tus alumnos automáticamente.
+            <p className="mb-3">
+              No hay alumnos {activeGroup ? `en el grupo "${activeGroup.name}"` : 'registrados aún'}.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                onClick={() => {
+                  setSingleGroupId(selectedGroupId);
+                  setIsSingleStudentModalOpen(true);
+                }}
+                className="btn-primary text-xs font-semibold"
+              >
+                + Añadir Alumno Directo
+              </button>
+              <button
+                onClick={() => setIsCsvModalOpen(true)}
+                className="btn-secondary text-xs"
+              >
+                📤 Subir Alumnos por CSV
+              </button>
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -539,6 +632,175 @@ export function GroupManager() {
         onConfirm={() => deletingStudent && removeStudent(deletingStudent)}
         onClose={() => setDeletingStudent(null)}
       />
+
+      {/* Modal Añadir Alumno Directo */}
+      <Modal
+        open={isSingleStudentModalOpen}
+        onClose={() => !isAddingSingleStudent && setIsSingleStudentModalOpen(false)}
+        title="Añadir Alumno Directo"
+        size="md"
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={isAddingSingleStudent}
+              onClick={() => setIsSingleStudentModalOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              form="form-add-single-student"
+              className="btn-primary font-semibold"
+              disabled={isAddingSingleStudent || !singleCn.trim() || !singleFullName.trim()}
+            >
+              {isAddingSingleStudent ? (
+                <>
+                  <Spinner className="h-4 w-4" /> Registrando...
+                </>
+              ) : (
+                'Registrar Alumno'
+              )}
+            </button>
+          </>
+        }
+      >
+        <form id="form-add-single-student" onSubmit={handleAddSingleStudent} className="space-y-4">
+          <p className="text-xs text-slate-300">
+            Ingresa el número de control y nombre del alumno. El sistema creará su cuenta y generará una contraseña temporal de 6 caracteres para su primer acceso.
+          </p>
+
+          <div>
+            <label className="label" htmlFor="single-cn-input">
+              Número de Control / Matrícula <span className="text-coral-400">*</span>
+            </label>
+            <input
+              id="single-cn-input"
+              className="input font-mono"
+              placeholder="Ej: 22010456"
+              value={singleCn}
+              onChange={(e) => setSingleCn(e.target.value)}
+              required
+              autoFocus
+            />
+            <p className="mt-1 text-[11px] text-slate-400">
+              El alumno iniciará sesión escribiendo únicamente este número de control.
+            </p>
+          </div>
+
+          <div>
+            <label className="label" htmlFor="single-name-input">
+              Nombre Completo <span className="text-coral-400">*</span>
+            </label>
+            <input
+              id="single-name-input"
+              className="input"
+              placeholder="Ej: Juan Pérez López"
+              value={singleFullName}
+              onChange={(e) => setSingleFullName(e.target.value)}
+              required
+            />
+          </div>
+
+          {groups.length > 0 && (
+            <div>
+              <label className="label" htmlFor="single-group-select">
+                Asignar al Grupo
+              </label>
+              <select
+                id="single-group-select"
+                className="input"
+                value={singleGroupId}
+                onChange={(e) => setSingleGroupId(e.target.value)}
+              >
+                <option value="">Sin grupo asignado (general)</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-mint-400/30 bg-mint-400/10 p-3 text-xs text-mint-300">
+            💡 <b>Nota:</b> Al registrarlo se te mostrará en pantalla la contraseña temporal generada para que se la puedas entregar o copiar.
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Éxito Alta Alumno */}
+      <Modal
+        open={!!singleStudentSuccess}
+        onClose={() => setSingleStudentSuccess(null)}
+        title="Alumno Registrado Exitosamente"
+        size="md"
+        footer={
+          <div className="flex w-full items-center justify-between">
+            <button
+              className="btn-secondary text-xs"
+              onClick={() => {
+                setSingleStudentSuccess(null);
+                setSingleCn('');
+                setSingleFullName('');
+                setIsSingleStudentModalOpen(true);
+              }}
+            >
+              + Añadir Otro Alumno
+            </button>
+            <button
+              className="btn-primary"
+              onClick={() => setSingleStudentSuccess(null)}
+            >
+              Listo
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 text-xs">
+            <div className="flex-1">
+              <div className="text-slate-400">Alumno:</div>
+              <div className="font-semibold text-white">{singleStudentSuccess?.fullName}</div>
+            </div>
+            <div>
+              <div className="text-slate-400">No. Control:</div>
+              <div className="font-mono font-semibold text-mint-300">
+                {singleStudentSuccess?.controlNumber}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 text-center">
+            <p className="text-xs text-slate-300">
+              Contraseña temporal asignada (se le pedirá cambiarla en su primer inicio de sesión):
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <div className="rounded-xl border border-mint-400/40 bg-ink-950 px-6 py-3 font-mono text-2xl font-bold tracking-widest text-mint-300 select-all">
+                {singleStudentSuccess?.tempPassword}
+              </div>
+              <button
+                type="button"
+                className="btn-secondary text-xs"
+                onClick={() => {
+                  if (singleStudentSuccess?.tempPassword) {
+                    navigator.clipboard.writeText(singleStudentSuccess.tempPassword);
+                    setCopiedTemp(true);
+                    setTimeout(() => setCopiedTemp(false), 2000);
+                  }
+                }}
+              >
+                {copiedTemp ? '✓ ¡Copiado!' : '📋 Copiar'}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-xs text-slate-400">
+            ℹ️ Entrega estos datos a tu alumno. Podrá ingresar directamente escribiendo su número de control y esta contraseña temporal.
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
