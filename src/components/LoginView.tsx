@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth, friendlyAuthError } from '../lib/auth';
-import { isFirebaseConfigured, TEACHER_EMAIL } from '../lib/firebase';
+import { isFirebaseConfigured } from '../lib/firebase';
 import { Logo, Spinner, cx } from './ui';
 
 interface Props {
@@ -149,7 +149,7 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
                   id="login-email"
                   type="email"
                   className="input"
-                  placeholder={TEACHER_EMAIL || 'profesor@instituto.edu.mx'}
+                  placeholder="profesor@institucion.edu"
                   autoFocus
                   required
                   value={identifier}
