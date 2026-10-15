@@ -400,7 +400,19 @@ export function deleteActivity(id: string): Promise<void> {
   return trackWrite(deleteDoc(doc(getDb(), 'activities', id)));
 }
 
-/* ----------------------------- Entregas ---------------------------- */
+function stripUndefined<T>(value: T): T {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map(stripUndefined) as unknown as T;
+  }
+  const clean: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    if (val !== undefined) {
+      clean[key] = stripUndefined(val);
+    }
+  }
+  return clean as T;
+}
 
 export function saveExerciseSubmission(
   student: Pick<UserProfile, 'uid' | 'controlNumber' | 'fullName'>,
@@ -429,6 +441,7 @@ export function saveExerciseSubmission(
     return;
   }
 
+  const cleanData = stripUndefined(data);
   const ref = doc(getDb(), 'submissions', submissionId(activityId, student.controlNumber));
   const payload = {
     activityId,
@@ -436,13 +449,17 @@ export function saveExerciseSubmission(
     studentUid: student.uid,
     fullName: student.fullName,
     lastUpdated: serverTimestamp(),
-    exercisesData: { [exerciseId]: data },
+    exercisesData: { [exerciseId]: cleanData },
   };
-  fireAndForget(
-    setDoc(ref, payload, {
-      mergeFields: ['activityId', 'controlNumber', 'studentUid', 'fullName', 'lastUpdated', `exercisesData.${exerciseId}`],
-    }),
-  );
+  try {
+    fireAndForget(
+      setDoc(ref, payload, {
+        mergeFields: ['activityId', 'controlNumber', 'studentUid', 'fullName', 'lastUpdated', `exercisesData.${exerciseId}`],
+      }),
+    );
+  } catch (err) {
+    console.warn('[firestore] Error al guardar entrega:', err);
+  }
 }
 
 export function resetExerciseSubmission(activityId: string, controlNumber: string, exerciseId: string): Promise<void> {

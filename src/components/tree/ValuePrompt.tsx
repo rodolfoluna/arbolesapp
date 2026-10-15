@@ -39,6 +39,7 @@ export function ValuePrompt({
   const submit = (v = value) => {
     setTouched(true);
     if (!isValidValue(v, dataType)) return;
+    onClose();
     onSubmit(normalizeValue(v, dataType));
   };
 
@@ -55,10 +56,16 @@ export function ValuePrompt({
       size="sm"
       footer={
         <>
-          <button className="btn-ghost" onClick={onClose}>
+          <button type="button" className="btn-ghost" onClick={onClose}>
             Cancelar
           </button>
-          <button id="value-prompt-ok" className="btn-primary" onClick={() => submit()} disabled={!value.trim()}>
+          <button
+            id="value-prompt-ok"
+            type="button"
+            className="btn-primary"
+            onClick={() => submit()}
+            disabled={!value.trim()}
+          >
             Aceptar
           </button>
         </>
@@ -67,6 +74,7 @@ export function ValuePrompt({
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           submit();
         }}
       >
@@ -82,6 +90,13 @@ export function ValuePrompt({
           autoCapitalize="characters"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              submit();
+            }
+          }}
           placeholder={dataType === 'NUMBER' ? 'p. ej. 45' : 'p. ej. M'}
         />
         {touched && !valid && (

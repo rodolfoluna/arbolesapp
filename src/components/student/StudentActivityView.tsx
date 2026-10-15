@@ -90,16 +90,23 @@ export function StudentActivityView({ activity, onBack }: Props) {
 
     // 2. Firestore (encola automáticamente si está offline)
     if (profile?.controlNumber && profile?.uid) {
+      const prevSub = submission?.exercisesData?.[exId];
       const payload: ExerciseSubmission = {
         tree,
         answers,
         updatedAt: Date.now(),
-        submitted: !!evalRes,
-        submittedAt: evalRes ? Date.now() : undefined,
-        attempts: (submission?.exercisesData?.[exId]?.attempts || 0) + (evalRes ? 1 : 0),
-        score: evalRes?.total,
-        structureExact: evalRes?.structureExact,
+        submitted: !!evalRes || (prevSub?.submitted ?? false),
+        attempts: (prevSub?.attempts || 0) + (evalRes ? 1 : 0),
       };
+      if (evalRes) {
+        payload.submittedAt = Date.now();
+        payload.score = evalRes.total;
+        payload.structureExact = evalRes.structureExact;
+      } else if (prevSub?.submitted) {
+        if (prevSub.submittedAt !== undefined) payload.submittedAt = prevSub.submittedAt;
+        if (prevSub.score !== undefined) payload.score = prevSub.score;
+        if (prevSub.structureExact !== undefined) payload.structureExact = prevSub.structureExact;
+      }
       saveExerciseSubmission(
         { uid: profile.uid, controlNumber: profile.controlNumber, fullName: profile.fullName },
         activity.id,

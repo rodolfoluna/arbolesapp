@@ -95,42 +95,50 @@ export function TreeCanvas({
     [tree, onChange],
   );
 
-  const undo = () => {
+  const undo = useCallback(() => {
     const prev = history.current.pop();
     if (prev) {
       onChange?.(prev);
       force((n) => n + 1);
     }
-  };
+  }, [onChange]);
 
   const handlePromptSubmit = (value: string) => {
     if (!prompt) return;
-    if (prompt.kind === 'root') {
-      const r = setRoot(tree, value);
-      newIds.current.add(r.id);
-      commit(r.tree);
-      setSelected(r.id);
-    } else if (prompt.kind === 'child') {
-      const r = addChild(tree, prompt.parentId, prompt.side, value);
-      if (r) {
+    const currentPrompt = prompt;
+    setPrompt(null);
+    try {
+      if (currentPrompt.kind === 'root') {
+        const r = setRoot(tree, value);
         newIds.current.add(r.id);
         commit(r.tree);
         setSelected(r.id);
+      } else if (currentPrompt.kind === 'child') {
+        const r = addChild(tree, currentPrompt.parentId, currentPrompt.side, value);
+        if (r) {
+          newIds.current.add(r.id);
+          commit(r.tree);
+          setSelected(r.id);
+        }
+      } else if (currentPrompt.kind === 'edit') {
+        commit(editValue(tree, currentPrompt.id, value));
       }
-    } else if (prompt.kind === 'edit') {
-      commit(editValue(tree, prompt.id, value));
+    } catch (err) {
+      console.error('[TreeCanvas] Error applying prompt change:', err);
     }
-    setPrompt(null);
   };
 
-  const requestDelete = (id: string) => {
-    const count = collectSubtree(tree, id).length;
-    if (count > 1) setConfirmDel({ id, count });
-    else {
-      commit(deleteSubtree(tree, id));
-      setSelected(null);
-    }
-  };
+  const requestDelete = useCallback(
+    (id: string) => {
+      const count = collectSubtree(tree, id).length;
+      if (count > 1) setConfirmDel({ id, count });
+      else {
+        commit(deleteSubtree(tree, id));
+        setSelected(null);
+      }
+    },
+    [tree, commit],
+  );
 
   // ---- teclado (PC) ----
   useEffect(() => {
@@ -155,7 +163,7 @@ export function TreeCanvas({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, [editable, prompt, confirmDel, selected, tree, undo, requestDelete]);
 
   // ---- pan / zoom (ratón, rueda y gestos táctiles) ----
   const pointers = useRef(new Map<number, { x: number; y: number }>());

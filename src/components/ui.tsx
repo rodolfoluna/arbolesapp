@@ -283,14 +283,14 @@ export function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cx(
-          'relative mt-0.5 h-6 w-11 shrink-0 rounded-full border transition-colors duration-200',
+          'relative mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border p-0.5 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
           checked ? 'border-primary bg-primary' : 'border-outline bg-surface-variant'
         )}
       >
         <span
           className={cx(
-            'absolute top-0.5 h-4.5 w-4.5 rounded-full transition-transform duration-200 shadow-sm',
-            checked ? 'translate-x-5.5 bg-on-primary' : 'translate-x-0.5 bg-text-muted'
+            'pointer-events-none block h-[18px] w-[18px] rounded-full bg-white shadow-md transition-transform duration-200',
+            checked ? 'translate-x-5' : 'translate-x-0'
           )}
         />
       </button>
