@@ -138,42 +138,42 @@ export function StudentActivityView({ activity, onBack }: Props) {
   const seenChip = new Map<string, number>();
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] flex-col bg-ink-950">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col bg-bg-app text-text-primary">
       {/* Barra Superior de la Actividad y Pestañas de Ejercicios */}
-      <div className="border-b border-white/[0.08] bg-ink-900/60 px-4 py-2 sm:px-6">
+      <div className="border-b border-outline bg-surface-container px-4 py-2 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
           <div className="flex items-center gap-3">
             {onBack && (
               <button
                 onClick={onBack}
-                className="btn-ghost btn-sm text-slate-400 hover:text-white"
+                className="btn-ghost btn-sm text-text-secondary hover:text-text-primary rounded-full"
                 title="Volver a lista de actividades"
               >
                 ← Volver
               </button>
             )}
             <div>
-              <h2 className="text-base font-semibold text-white sm:text-lg">
+              <h2 className="text-base font-semibold text-text-primary sm:text-lg">
                 {activity.title}
               </h2>
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-text-muted">
                 Tipo pedido:{' '}
-                <span className="font-semibold text-mint-300">
+                <span className="font-semibold text-primary">
                   {TREE_TYPE_LABEL[activeExercise.treeType]}
                 </span>
                 {' · '}
-                <span className="text-slate-400">{TREE_TYPE_HINT[activeExercise.treeType]}</span>
+                <span>{TREE_TYPE_HINT[activeExercise.treeType]}</span>
               </div>
             </div>
           </div>
 
           {/* Selector de Vistas en Móvil */}
-          <div className="flex rounded-xl border border-white/10 bg-white/[0.04] p-1 sm:hidden">
+          <div className="flex rounded-full border border-outline bg-surface-variant p-1 sm:hidden">
             <button
               onClick={() => setMobileTab('tree')}
               className={cx(
-                'rounded-lg px-3 py-1 text-xs font-medium transition',
-                mobileTab === 'tree' ? 'bg-mint-400/20 text-mint-300' : 'text-slate-400'
+                'rounded-full px-3 py-1 text-xs font-medium transition',
+                mobileTab === 'tree' ? 'bg-primary text-on-primary shadow-xs' : 'text-text-secondary'
               )}
             >
               🌳 Ver Árbol
@@ -181,8 +181,8 @@ export function StudentActivityView({ activity, onBack }: Props) {
             <button
               onClick={() => setMobileTab('questions')}
               className={cx(
-                'rounded-lg px-3 py-1 text-xs font-medium transition',
-                mobileTab === 'questions' ? 'bg-mint-400/20 text-mint-300' : 'text-slate-400'
+                'rounded-full px-3 py-1 text-xs font-medium transition',
+                mobileTab === 'questions' ? 'bg-primary text-on-primary shadow-xs' : 'text-text-secondary'
               )}
             >
               📝 Preguntas
@@ -205,16 +205,16 @@ export function StudentActivityView({ activity, onBack }: Props) {
                   setActiveExIndex(idx);
                 }}
                 className={cx(
-                  'flex items-center gap-2 rounded-xl border px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150',
+                  'flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-medium whitespace-nowrap transition-all duration-150',
                   isSelected
-                    ? 'border-mint-400/60 bg-mint-400/15 text-white shadow-[0_0_12px_rgba(52,211,153,0.2)]'
-                    : 'border-white/5 bg-white/[0.02] text-slate-400 hover:border-white/15 hover:text-slate-200'
+                    ? 'border-primary bg-primary-container text-on-primary-container font-semibold shadow-xs'
+                    : 'border-outline bg-surface text-text-secondary hover:bg-surface-variant hover:text-text-primary'
                 )}
               >
                 <span>{ex.title || `Ejercicio ${idx + 1}`}</span>
                 {isCompleted && (
                   <span
-                    className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-mint-400/20 text-[10px] text-mint-400 font-bold"
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold"
                     title="Ejercicio evaluado"
                   >
                     ✓
@@ -229,8 +229,8 @@ export function StudentActivityView({ activity, onBack }: Props) {
         </div>
 
         {/* Chips del Conjunto de Datos de Referencia */}
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/[0.04]">
-          <span className="text-xs font-medium text-slate-400">Datos a insertar:</span>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 pt-1 border-t border-outline">
+          <span className="text-xs font-medium text-text-muted">Datos a insertar:</span>
           {activeExercise.dataset.map((val, i) => {
             const k = valueKey(val, activeExercise.dataType);
             const n = (seenChip.get(k) ?? 0) + 1;
@@ -241,10 +241,10 @@ export function StudentActivityView({ activity, onBack }: Props) {
               <span
                 key={`${val}-${i}`}
                 className={cx(
-                  'rounded px-2 py-0.5 font-mono text-xs transition select-none',
+                  'rounded-full px-2.5 py-0.5 font-mono text-xs transition select-none',
                   isUsed
-                    ? 'border border-white/5 bg-white/[0.02] text-slate-600 line-through'
-                    : 'border border-mint-400/30 bg-mint-400/10 text-mint-300 font-semibold'
+                    ? 'border border-outline bg-surface-variant text-text-muted line-through'
+                    : 'border border-primary/40 bg-primary-container/40 text-primary font-bold'
                 )}
                 title={isUsed ? 'Ya colocado en tu árbol' : 'Pendiente de insertar'}
               >

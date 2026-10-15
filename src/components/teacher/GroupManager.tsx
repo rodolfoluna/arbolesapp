@@ -252,15 +252,15 @@ export function GroupManager() {
       />
 
       {/* Selector de Grupo */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.08] pb-4">
-        <span className="text-xs font-medium text-slate-400">Grupo:</span>
+      <div className="flex flex-wrap items-center gap-2 border-b border-outline pb-4">
+        <span className="text-xs font-medium text-text-muted">Grupo:</span>
         <button
           onClick={() => setSelectedGroupId('')}
           className={cx(
-            'rounded-lg px-3 py-1.5 text-xs font-medium transition',
+            'rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200',
             !selectedGroupId
-              ? 'bg-mint-400/20 text-mint-300 border border-mint-400/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-primary-container text-on-primary-container font-semibold shadow-xs'
+              : 'text-text-secondary hover:bg-surface-variant hover:text-text-primary'
           )}
         >
           Todos los alumnos ({students.length})
@@ -273,10 +273,10 @@ export function GroupManager() {
               key={g.id}
               onClick={() => setSelectedGroupId(g.id)}
               className={cx(
-                'rounded-lg px-3 py-1.5 text-xs font-medium transition',
+                'rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200',
                 isSel
-                  ? 'bg-mint-400/20 text-mint-300 border border-mint-400/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-primary-container text-on-primary-container font-semibold shadow-xs'
+                  : 'text-text-secondary hover:bg-surface-variant hover:text-text-primary'
               )}
             >
               {g.name} ({count})
@@ -286,11 +286,11 @@ export function GroupManager() {
       </div>
 
       {/* Tabla de Alumnos */}
-      <div className="card overflow-hidden !p-0">
-        <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-3">
-          <div className="text-sm font-semibold text-white">
+      <div className="card overflow-hidden !p-0 border-outline bg-surface-container">
+        <div className="flex items-center justify-between border-b border-outline px-5 py-3.5">
+          <div className="text-sm font-semibold text-text-primary">
             {activeGroup ? `Alumnos de ${activeGroup.name}` : 'Todos los Alumnos Registrados'}
-            <span className="ml-2 font-mono text-xs text-slate-400">
+            <span className="ml-2 font-mono text-xs text-text-muted">
               ({studentsInGroup.length})
             </span>
           </div>
@@ -299,7 +299,7 @@ export function GroupManager() {
               setSingleGroupId(selectedGroupId);
               setIsSingleStudentModalOpen(true);
             }}
-            className="btn-secondary btn-sm text-xs"
+            className="btn-tonal btn-sm text-xs font-semibold"
           >
             + Añadir Alumno
           </button>

@@ -92,16 +92,16 @@ export function TeacherDashboard() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      {/* Navegación por Pestañas del Profesor */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
-        <div className="flex gap-2">
+      {/* Navegación por Pestañas del Profesor (Material 3 Navigation Pills) */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-outline pb-4">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setTab('activities')}
             className={cx(
-              'rounded-xl px-4 py-2 text-sm font-semibold transition',
+              'rounded-full px-5 py-2 text-sm font-medium transition-all duration-200',
               tab === 'activities'
-                ? 'bg-mint-400/20 text-mint-300 border border-mint-400/30'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-primary-container text-on-primary-container font-semibold shadow-xs'
+                : 'text-text-secondary hover:bg-surface-variant hover:text-text-primary'
             )}
           >
             📋 Actividades y Prácticas
@@ -109,10 +109,10 @@ export function TeacherDashboard() {
           <button
             onClick={() => setTab('matrix')}
             className={cx(
-              'rounded-xl px-4 py-2 text-sm font-semibold transition',
+              'rounded-full px-5 py-2 text-sm font-medium transition-all duration-200',
               tab === 'matrix'
-                ? 'bg-mint-400/20 text-mint-300 border border-mint-400/30'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-primary-container text-on-primary-container font-semibold shadow-xs'
+                : 'text-text-secondary hover:bg-surface-variant hover:text-text-primary'
             )}
           >
             📊 Matriz de Avances
@@ -120,10 +120,10 @@ export function TeacherDashboard() {
           <button
             onClick={() => setTab('students')}
             className={cx(
-              'rounded-xl px-4 py-2 text-sm font-semibold transition',
+              'rounded-full px-5 py-2 text-sm font-medium transition-all duration-200',
               tab === 'students'
-                ? 'bg-mint-400/20 text-mint-300 border border-mint-400/30'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-primary-container text-on-primary-container font-semibold shadow-xs'
+                : 'text-text-secondary hover:bg-surface-variant hover:text-text-primary'
             )}
           >
             👥 Alumnos y Grupos
@@ -166,37 +166,37 @@ export function TeacherDashboard() {
                 return (
                   <div
                     key={act.id}
-                    className="card flex flex-col justify-between border-white/[0.08]"
+                    className="card flex flex-col justify-between border-outline bg-surface-container hover:border-primary/60 transition-all duration-200"
                   >
                     <div>
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-medium text-slate-300">
+                        <span className="rounded-full bg-surface-variant px-3 py-1 text-[11px] font-medium text-text-secondary">
                           Grupo: {group?.name || 'Sin grupo'}
                         </span>
                         <span
                           className={cx(
                             'badge border text-[11px]',
                             act.settings.open
-                              ? 'border-mint-400/30 bg-mint-400/10 text-mint-300'
-                              : 'border-white/10 bg-white/5 text-slate-500'
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium'
+                              : 'border-outline bg-surface-variant text-text-muted'
                           )}
                         >
                           {act.settings.open ? '● Abierta' : '○ Cerrada'}
                         </span>
                       </div>
 
-                      <h3 className="text-lg font-semibold text-white">{act.title}</h3>
+                      <h3 className="text-lg font-semibold text-text-primary">{act.title}</h3>
                       {act.description && (
-                        <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+                        <p className="mt-1 line-clamp-2 text-xs text-text-muted">
                           {act.description}
                         </p>
                       )}
 
-                      <div className="mt-3 flex flex-wrap gap-1">
+                      <div className="mt-3 flex flex-wrap gap-1.5">
                         {act.exercises.map((ex, i) => (
                           <span
                             key={ex.id}
-                            className="rounded bg-white/[0.04] px-2 py-0.5 font-mono text-[10px] text-slate-400"
+                            className="rounded-full bg-surface-variant px-2.5 py-0.5 font-mono text-[10px] text-text-secondary"
                           >
                             Ej {i + 1}: {ex.treeType} ({ex.dataset.length})
                           </span>
@@ -204,14 +204,14 @@ export function TeacherDashboard() {
                       </div>
                     </div>
 
-                    <div className="mt-5 border-t border-white/[0.06] pt-3">
+                    <div className="mt-5 border-t border-outline pt-3">
                       <div className="flex flex-wrap items-center justify-between gap-1">
                         <button
                           onClick={() => {
                             setMatrixActivityId(act.id);
                             setTab('matrix');
                           }}
-                          className="btn-ghost btn-sm text-xs text-mint-300"
+                          className="btn-tonal btn-sm text-xs font-semibold"
                         >
                           Ver Matriz →
                         </button>
@@ -219,21 +219,21 @@ export function TeacherDashboard() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleToggleOpen(act)}
-                            className="btn-ghost btn-sm text-xs text-slate-400 hover:text-white"
+                            className="btn-ghost btn-sm text-xs"
                             title={act.settings.open ? 'Cerrar actividad' : 'Abrir actividad'}
                           >
                             {act.settings.open ? 'Cerrar' : 'Abrir'}
                           </button>
                           <button
                             onClick={() => setEditingActivity(act)}
-                            className="btn-ghost btn-sm text-xs text-slate-400 hover:text-white"
+                            className="btn-ghost btn-sm text-xs"
                             title="Editar actividad"
                           >
                             Editar
                           </button>
                           <button
                             onClick={() => setDeletingActivity(act)}
-                            className="btn-ghost btn-sm text-xs text-coral-400 hover:bg-coral-400/10"
+                            className="btn-ghost btn-sm text-xs text-red-500 hover:bg-red-500/10"
                             title="Eliminar actividad"
                           >
                             ✕
@@ -253,17 +253,17 @@ export function TeacherDashboard() {
         <div className="space-y-6">
           {/* Selector de Actividad para ver su matriz */}
           {activities.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.08] pb-3">
-              <span className="text-xs font-medium text-slate-400">Actividad:</span>
+            <div className="flex flex-wrap items-center gap-2 border-b border-outline pb-3">
+              <span className="text-xs font-medium text-text-muted">Actividad:</span>
               {activities.map((a) => (
                 <button
                   key={a.id}
                   onClick={() => setMatrixActivityId(a.id)}
                   className={cx(
-                    'rounded-lg px-3 py-1.5 text-xs font-medium transition',
+                    'rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200',
                     a.id === selectedMatrixActivity?.id
-                      ? 'bg-mint-400/20 text-mint-300 border border-mint-400/30'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-primary-container text-on-primary-container font-semibold shadow-xs'
+                      : 'text-text-secondary hover:bg-surface-variant hover:text-text-primary'
                   )}
                 >
                   {a.title}

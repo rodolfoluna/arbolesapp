@@ -95,42 +95,42 @@ export function StudentDashboard() {
               <div
                 key={act.id}
                 onClick={() => setSelectedActivity(act)}
-                className="card card-hover flex cursor-pointer flex-col justify-between border-white/[0.08] transition hover:border-mint-400/30"
+                className="card card-hover flex cursor-pointer flex-col justify-between border-outline bg-surface-container transition hover:border-primary"
               >
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-medium text-slate-300">
+                    <span className="rounded-full bg-surface-variant px-3 py-1 text-[11px] font-medium text-text-secondary">
                       {totalEx} {totalEx === 1 ? 'ejercicio' : 'ejercicios'}
                     </span>
                     {avgScore !== null ? (
                       <ScorePill score={avgScore} />
                     ) : (
-                      <span className="rounded-full border border-white/5 bg-white/[0.03] px-2 py-0.5 text-[11px] text-slate-500">
+                      <span className="rounded-full border border-outline bg-surface-variant px-2.5 py-0.5 text-[11px] text-text-muted">
                         Sin calificar
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-lg font-semibold text-white group-hover:text-mint-300">
+                  <h3 className="text-lg font-semibold text-text-primary">
                     {act.title}
                   </h3>
                   {act.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+                    <p className="mt-1 line-clamp-2 text-xs text-text-muted">
                       {act.description}
                     </p>
                   )}
                 </div>
 
-                <div className="mt-6 border-t border-white/[0.06] pt-3">
-                  <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+                <div className="mt-6 border-t border-outline pt-3.5">
+                  <div className="mb-2 flex items-center justify-between text-xs text-text-muted">
                     <span>Avance:</span>
-                    <span className="font-medium text-slate-200">
+                    <span className="font-semibold text-text-primary">
                       {completedCount} de {totalEx} completados
                     </span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-surface-variant">
                     <div
-                      className="h-full bg-linear-to-r from-mint-400 to-aqua-400 transition-all duration-300"
+                      className="h-full bg-primary transition-all duration-300 rounded-full"
                       style={{
                         width: `${totalEx > 0 ? (completedCount / totalEx) * 100 : 0}%`,
                       }}
@@ -138,7 +138,7 @@ export function StudentDashboard() {
                   </div>
 
                   <button
-                    className="btn-secondary w-full mt-4 text-xs font-semibold py-2 hover:border-mint-400/40"
+                    className="btn-tonal w-full mt-4 text-xs font-semibold py-2"
                   >
                     {isFinished ? 'Ver Respuestas y Calificación →' : 'Comenzar Práctica →'}
                   </button>

@@ -3,6 +3,7 @@ import { Brand, cx } from './ui';
 import { useAuth } from '../lib/auth';
 import { useWriteQueue } from '../lib/syncStore';
 import { isFirebaseConfigured } from '../lib/firebase';
+import { ThemeToggle } from './ThemeToggle';
 
 interface NavbarProps {
   onOpenFirebaseGuide?: () => void;
@@ -32,29 +33,30 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
   const isFullySynced = isOnline && pending === 0;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-ink-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-outline bg-surface/85 backdrop-blur-xl transition-colors duration-200">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-4">
           <Brand subtitle={isTeacher ? 'Panel del Profesor' : 'Portal de Estudiantes'} />
-          
+
           {!isFirebaseConfigured && (
             <button
               onClick={onOpenFirebaseGuide}
-              className="hidden items-center gap-1.5 rounded-full border border-sun-400/30 bg-sun-400/10 px-2.5 py-0.5 text-xs font-medium text-sun-400 hover:bg-sun-400/20 md:inline-flex"
+              className="hidden items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 md:inline-flex transition-colors"
             >
               <span>⚙️ Configurar Firebase</span>
             </button>
           )}
         </div>
 
-        {/* Indicador de Red y Sincronización */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Indicador de Red, Conmutador de Tema y Perfil */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Badge de Sincronización */}
           <div
             className={cx(
               'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
               isFullySynced
-                ? 'border-mint-400/30 bg-mint-400/10 text-mint-300'
-                : 'border-sun-400/30 bg-sun-400/10 text-sun-300'
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
             )}
             title={
               isFullySynced
@@ -67,29 +69,34 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
             <span
               className={cx(
                 'h-2 w-2 rounded-full',
-                isFullySynced ? 'bg-mint-400 shadow-[0_0_8px_#34d399]' : 'bg-sun-400 animate-pulse-soft'
+                isFullySynced
+                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                  : 'bg-amber-500 animate-pulse-soft'
               )}
             />
             <span className="hidden sm:inline">
               {isFullySynced
                 ? '🟢 Sincronizado en la nube'
                 : !isOnline
-                ? '🟡 Modo sin conexión (Guardado en dispositivo)'
+                ? '🟡 Modo sin conexión'
                 : `🟡 Subiendo (${pending})...`}
             </span>
-            <span className="sm:hidden">
-              {isFullySynced ? 'Sincronizado' : 'Sin conexión'}
+            <span className="sm:hidden font-mono">
+              {isFullySynced ? '🟢 En línea' : '🟡 Offline'}
             </span>
           </div>
+
+          {/* Conmutador de Tema Claro / Oscuro Material Design */}
+          <ThemeToggle />
 
           {/* Perfil y Cierre de Sesión */}
           {user && (
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="hidden text-right text-xs md:block">
-                <div className="font-medium text-white">
+                <div className="font-semibold text-text-primary">
                   {profile?.fullName || (isTeacher ? 'Profesor' : profile?.controlNumber)}
                 </div>
-                <div className="font-mono text-slate-400">
+                <div className="font-mono text-text-muted text-[11px]">
                   {isTeacher ? 'Docente' : `No. Control: ${profile?.controlNumber}`}
                 </div>
               </div>
@@ -97,7 +104,7 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
               <button
                 id="btn-logout"
                 onClick={logout}
-                className="btn-ghost btn-sm border border-white/10 text-slate-300 hover:border-coral-400/30 hover:bg-coral-400/10 hover:text-coral-400"
+                className="btn-ghost btn-sm border border-outline hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-500 text-text-secondary"
                 title="Cerrar sesión"
               >
                 <span className="hidden sm:inline">Salir</span>

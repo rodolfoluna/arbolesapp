@@ -87,13 +87,13 @@ export function ProgressMatrix({ activity, group, students }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline pb-3">
         <div>
-          <h3 className="font-semibold text-white">
+          <h3 className="font-semibold text-text-primary">
             Matriz de Avances: {activity.title}
           </h3>
-          <p className="text-xs text-slate-400">
-            Grupo: <b className="text-slate-200">{group?.name || 'General'}</b> · Alumnos:{' '}
+          <p className="text-xs text-text-muted">
+            Grupo: <b className="text-text-primary">{group?.name || 'General'}</b> · Alumnos:{' '}
             {studentsInGroup.length}
           </p>
         </div>
@@ -107,11 +107,11 @@ export function ProgressMatrix({ activity, group, students }: Props) {
       </div>
 
       {/* Tabla de Matriz */}
-      <div className="card overflow-hidden !p-0">
+      <div className="card overflow-hidden !p-0 border-outline bg-surface-container">
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
-              <tr className="bg-white/[0.02]">
+              <tr className="bg-surface-variant">
                 <th>No. Control</th>
                 <th>Nombre del Alumno</th>
                 {activity.exercises.map((ex, idx) => (
@@ -127,7 +127,7 @@ export function ProgressMatrix({ activity, group, students }: Props) {
                 <tr>
                   <td
                     colSpan={activity.exercises.length + 3}
-                    className="p-8 text-center text-xs text-slate-500"
+                    className="p-8 text-center text-xs text-text-muted"
                   >
                     No hay alumnos asignados a este grupo aún.
                   </td>
@@ -142,10 +142,10 @@ export function ProgressMatrix({ activity, group, students }: Props) {
 
                   return (
                     <tr key={st.uid}>
-                      <td className="font-mono text-xs font-semibold text-mint-300">
+                      <td className="font-mono text-xs font-semibold text-primary">
                         {st.controlNumber}
                       </td>
-                      <td className="font-medium text-white">{st.fullName}</td>
+                      <td className="font-medium text-text-primary">{st.fullName}</td>
 
                       {activity.exercises.map((ex) => {
                         const exData = sub?.exercisesData?.[ex.id];

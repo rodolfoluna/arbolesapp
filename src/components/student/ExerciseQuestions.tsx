@@ -58,10 +58,10 @@ export function ExerciseQuestions({
     <div className="flex h-full flex-col justify-between overflow-y-auto p-4 sm:p-5">
       <div className="space-y-4">
         {/* Cabecera del Cuestionario */}
-        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+        <div className="flex items-center justify-between border-b border-outline pb-3">
           <div>
-            <h3 className="font-semibold text-white">Cuestionario Teórico</h3>
-            <p className="text-xs text-slate-400">
+            <h3 className="font-semibold text-text-primary">Cuestionario Teórico</h3>
+            <p className="text-xs text-text-muted">
               Analiza las propiedades del árbol que construiste a la izquierda
             </p>
           </div>
@@ -71,8 +71,8 @@ export function ExerciseQuestions({
         </div>
 
         {/* Criterios activos del profesor */}
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 text-[11px] text-slate-400">
-          <span className="font-medium text-slate-300">Criterio de clase: </span>
+        <div className="rounded-xl border border-outline bg-surface-variant/40 p-2.5 text-[11px] text-text-muted">
+          <span className="font-medium text-text-primary">Criterio de clase: </span>
           {settings.heightMode === 'LEVELS'
             ? 'Altura en niveles (raíz = 1)'
             : 'Altura en aristas (raíz = 0)'}

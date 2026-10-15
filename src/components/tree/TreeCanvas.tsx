@@ -287,7 +287,8 @@ export function TreeCanvas({
               y1={ed.y1}
               x2={ed.x2}
               y2={ed.y2}
-              stroke="rgb(110 231 183 / 0.35)"
+              stroke="var(--canvas-node-stroke)"
+              strokeOpacity="0.45"
               strokeWidth={2.5}
               strokeLinecap="round"
             />
@@ -311,7 +312,8 @@ export function TreeCanvas({
                       y1={selLayout.y}
                       x2={selLayout.x + (side === 'l' ? -H_GAP / 2 : H_GAP / 2)}
                       y2={selLayout.y + V_GAP * 0.8}
-                      stroke="rgb(167 139 250 / 0.5)"
+                      stroke="var(--primary)"
+                      strokeOpacity="0.5"
                       strokeWidth={2}
                       strokeDasharray="4 5"
                     />
@@ -319,8 +321,8 @@ export function TreeCanvas({
                       cx={selLayout.x + (side === 'l' ? -H_GAP / 2 : H_GAP / 2)}
                       cy={selLayout.y + V_GAP * 0.8}
                       r={NODE_R * 0.72}
-                      fill="rgb(139 92 246 / 0.14)"
-                      stroke="rgb(167 139 250 / 0.7)"
+                      fill="var(--primary-container)"
+                      stroke="var(--primary)"
                       strokeWidth={2}
                       strokeDasharray="4 4"
                     />
@@ -329,9 +331,9 @@ export function TreeCanvas({
                       y={selLayout.y + V_GAP * 0.8}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      fill="#c4b5fd"
+                      fill="var(--on-primary-container)"
                       fontSize={20}
-                      fontWeight={600}
+                      fontWeight={700}
                     >
                       +
                     </text>
@@ -346,20 +348,44 @@ export function TreeCanvas({
             const isSel = n.id === selected;
             const tone = nodeTone?.(n.id);
             const fs = n.val.length <= 3 ? 15 : n.val.length <= 5 ? 12 : 9.5;
-            const stroke =
-              tone === 'ok'
-                ? '#34d399'
-                : tone === 'bad'
-                  ? '#fb7185'
-                  : tone === 'missing'
-                    ? '#fbbf24'
-                    : isSel
-                      ? '#a78bfa'
-                      : isRoot
-                        ? '#6ee7b7'
-                        : 'rgb(110 231 183 / 0.55)';
             const fresh = newIds.current.has(n.id);
             if (fresh) setTimeout(() => newIds.current.delete(n.id), 400);
+
+            const fill =
+              tone === 'ok'
+                ? 'var(--color-green-bg)'
+                : tone === 'bad'
+                ? 'var(--color-red-bg)'
+                : tone === 'missing'
+                ? 'var(--color-amber-bg)'
+                : isRoot
+                ? 'var(--primary)'
+                : 'var(--surface-container)';
+
+            const stroke =
+              tone === 'ok'
+                ? 'var(--color-green)'
+                : tone === 'bad'
+                ? 'var(--color-red)'
+                : tone === 'missing'
+                ? 'var(--color-amber)'
+                : isSel
+                ? 'var(--primary)'
+                : isRoot
+                ? 'var(--primary)'
+                : 'var(--canvas-node-stroke)';
+
+            const textFill =
+              tone === 'ok'
+                ? 'var(--color-green)'
+                : tone === 'bad'
+                ? 'var(--color-red)'
+                : tone === 'missing'
+                ? 'var(--color-amber)'
+                : isRoot
+                ? 'var(--on-primary)'
+                : 'var(--text-primary)';
+
             return (
               <g
                 key={n.id}
@@ -369,14 +395,15 @@ export function TreeCanvas({
                   clickNode(n.id);
                 }}
               >
-                {isSel && <circle cx={n.x} cy={n.y} r={NODE_R + 7} fill="rgb(139 92 246 / 0.22)" filter={`url(#${idPrefix}-glow)`} />}
+                {isSel && <circle cx={n.x} cy={n.y} r={NODE_R + 7} fill="var(--primary-container)" opacity="0.6" filter={`url(#${idPrefix}-glow)`} />}
                 <circle
                   cx={n.x}
                   cy={n.y}
                   r={NODE_R}
-                  fill={isRoot && !tone ? `url(#${idPrefix}-root)` : `url(#${idPrefix}-node)`}
+                  fill={fill}
                   stroke={stroke}
-                  strokeWidth={isSel ? 3 : 2}
+                  strokeWidth={isSel ? 3.5 : 2}
+                  className="transition-colors duration-150"
                 />
                 <text
                   x={n.x}
@@ -385,8 +412,8 @@ export function TreeCanvas({
                   dominantBaseline="central"
                   fontFamily="'JetBrains Mono Variable', monospace"
                   fontSize={fs}
-                  fontWeight={600}
-                  fill={isRoot && !tone ? '#04121a' : '#e2e8f0'}
+                  fontWeight={700}
+                  fill={textFill}
                 >
                   {n.val}
                 </text>
@@ -447,14 +474,14 @@ export function TreeCanvas({
         </div>
       )}
 
-      {/* Barra de acciones del nodo seleccionado */}
+      {/* Barra de acciones del nodo seleccionado (Material 3 Pill Bar) */}
       {editable && selNode && selected && (
-        <div className="absolute inset-x-0 bottom-3 flex justify-center px-2">
-          <div className="glass flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl bg-ink-900/90 p-1.5 animate-fade-up">
-            <span className="px-2 font-mono text-sm text-iris-300">{selNode.v}</span>
+        <div className="absolute inset-x-0 bottom-4 flex justify-center px-2">
+          <div className="flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full border border-outline bg-surface-container shadow-xl p-1.5 animate-fade-up">
+            <span className="px-3 font-mono text-sm font-bold text-primary">{selNode.v}</span>
             <button
               id="node-add-left"
-              className="btn-ghost btn-sm"
+              className="btn-ghost btn-sm rounded-full text-text-primary"
               disabled={!!selNode.l}
               onClick={() => setPrompt({ kind: 'child', parentId: selected, side: 'l' })}
             >
@@ -462,16 +489,24 @@ export function TreeCanvas({
             </button>
             <button
               id="node-add-right"
-              className="btn-ghost btn-sm"
+              className="btn-ghost btn-sm rounded-full text-text-primary"
               disabled={!!selNode.r}
               onClick={() => setPrompt({ kind: 'child', parentId: selected, side: 'r' })}
             >
               Hijo der ↘
             </button>
-            <button id="node-edit" className="btn-ghost btn-sm" onClick={() => setPrompt({ kind: 'edit', id: selected })}>
+            <button
+              id="node-edit"
+              className="btn-ghost btn-sm rounded-full text-text-primary"
+              onClick={() => setPrompt({ kind: 'edit', id: selected })}
+            >
               ✎ Editar
             </button>
-            <button id="node-delete" className="btn-sm btn !text-coral-400 hover:bg-coral-400/10" onClick={() => requestDelete(selected)}>
+            <button
+              id="node-delete"
+              className="btn-sm btn rounded-full !text-red-500 hover:bg-red-500/10"
+              onClick={() => requestDelete(selected)}
+            >
               🗑 Eliminar
             </button>
           </div>

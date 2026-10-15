@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './lib/auth';
+import { ThemeProvider } from './lib/theme';
 import { Navbar } from './components/Navbar';
 import { LoginView } from './components/LoginView';
 import { MustChangePasswordModal } from './components/MustChangePasswordModal';
@@ -32,7 +33,7 @@ function AppShell() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-ink-950 text-slate-100 selection:bg-mint-400/30">
+    <div className="min-h-dvh flex flex-col bg-bg-app text-text-primary transition-colors duration-200">
       <Navbar onOpenFirebaseGuide={() => setIsGuideOpen(true)} />
 
       {/* Modal obligatorio si el alumno aún no cambia la contraseña inicial */}
@@ -53,8 +54,10 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppShell />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

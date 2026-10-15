@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth, friendlyAuthError } from '../lib/auth';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { Logo, Spinner, cx } from './ui';
+import { ThemeToggle } from './ThemeToggle';
 
 interface Props {
   onOpenFirebaseGuide: () => void;
@@ -35,25 +36,30 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
   };
 
   return (
-    <div className="grid min-h-dvh place-items-center p-4">
+    <div className="relative grid min-h-dvh place-items-center p-4 bg-bg-app text-text-primary transition-colors duration-200">
+      {/* Botón superior de Tema Claro / Oscuro */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md space-y-6">
-        {/* Logo y Encabezado */}
+        {/* Logo oficial y Encabezado Material Design */}
         <div className="text-center animate-fade-up">
           <div className="inline-flex justify-center mb-3">
-            <Logo className="h-16 w-16" />
+            <Logo className="h-20 w-20 shadow-md rounded-[22px]" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Árboles <span className="gradient-text">Binarios</span>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
+            Árboles <span className="text-primary font-bold">Binarios</span>
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-text-muted max-w-xs mx-auto">
             Plataforma interactiva para la construcción manual y evaluación de árboles
           </p>
         </div>
 
-        {/* Tarjeta de Inicio de Sesión */}
-        <div className="card space-y-5 animate-fade-up">
-          {/* Selector de Rol: Alumno / Profesor */}
-          <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-ink-950/60 p-1">
+        {/* Tarjeta de Inicio de Sesión Material 3 */}
+        <div className="card space-y-5 animate-fade-up border-outline bg-surface-container shadow-xl">
+          {/* Selector de Rol: Alumno / Profesor (Segmented Button M3) */}
+          <div className="grid grid-cols-2 gap-1 rounded-full border border-outline bg-surface-variant/70 p-1">
             <button
               type="button"
               onClick={() => {
@@ -61,10 +67,10 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
                 setError(null);
               }}
               className={cx(
-                'rounded-lg py-2 text-xs font-semibold transition',
+                'rounded-full py-2 text-xs font-semibold transition-all duration-200',
                 role === 'student'
-                  ? 'bg-mint-400/20 text-mint-300 border border-mint-400/30'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-primary text-on-primary shadow-sm'
+                  : 'text-text-secondary hover:text-text-primary'
               )}
             >
               🎓 Soy Alumno
@@ -76,10 +82,10 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
                 setError(null);
               }}
               className={cx(
-                'rounded-lg py-2 text-xs font-semibold transition',
+                'rounded-full py-2 text-xs font-semibold transition-all duration-200',
                 role === 'teacher'
-                  ? 'bg-mint-400/20 text-mint-300 border border-mint-400/30'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-primary text-on-primary shadow-sm'
+                  : 'text-text-secondary hover:text-text-primary'
               )}
             >
               👨‍🏫 Soy Profesor
@@ -88,34 +94,34 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
 
           {/* Aviso si Firebase aún no está enlazado */}
           {!isFirebaseConfigured && (
-            <div className="rounded-xl border border-sun-400/30 bg-sun-400/10 p-3 text-xs text-sun-300 space-y-2">
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-700 dark:text-amber-300 space-y-2">
               <div>
-                ⚠️ <b>Firebase no configurado aún</b> en <code className="text-white">.env.local</code>.
+                💡 <b>Modo de Demostración activo</b> (sin Firebase configurado).
               </div>
-              <p className="text-[11px] text-slate-300">
-                Puedes explorar la app completa con el modo demo local:
+              <p className="text-[11px] text-text-secondary">
+                Puedes explorar la plataforma de inmediato con una cuenta de prueba:
               </p>
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => onEnterDemoMode?.('teacher')}
-                  className="btn-iris btn-sm flex-1 text-xs"
+                  className="btn-tonal btn-sm flex-1 text-xs"
                 >
-                  Entrar como Profesor (Demo)
+                  Probar como Profesor
                 </button>
                 <button
                   type="button"
                   onClick={() => onEnterDemoMode?.('student')}
                   className="btn-secondary btn-sm flex-1 text-xs"
                 >
-                  Entrar como Alumno (Demo)
+                  Probar como Alumno
                 </button>
               </div>
             </div>
           )}
 
           {error && (
-            <div className="rounded-xl border border-coral-400/30 bg-coral-400/10 p-3 text-xs text-coral-400">
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-400">
               {error}
             </div>
           )}
@@ -136,8 +142,8 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                 />
-                <span className="mt-1 block text-[11px] text-slate-500">
-                  Ingresa tu número de control proporcionado por tu profesor.
+                <span className="mt-1 block text-[11px] text-text-muted">
+                  Ingresa tu número de control escolar proporcionado por tu profesor.
                 </span>
               </div>
             ) : (
@@ -165,19 +171,24 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
               <input
                 id="login-password"
                 type="password"
-                className="input font-mono"
-                placeholder="••••••••"
+                className="input"
+                placeholder={role === 'student' ? 'Contraseña temporal o personal' : 'Tu contraseña'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {role === 'student' && (
+                <span className="mt-1 block text-[11px] text-text-muted">
+                  Si es tu primer acceso, usa la contraseña de 6 caracteres que te dio tu profesor.
+                </span>
+              )}
             </div>
 
             <button
               id="btn-login-submit"
               type="submit"
-              disabled={loading || !identifier || !password}
-              className="btn-primary w-full py-3 font-semibold"
+              disabled={loading}
+              className="btn-primary w-full py-3 text-sm font-semibold tracking-wide"
             >
               {loading ? (
                 <>
@@ -189,21 +200,16 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
             </button>
           </form>
 
-          {/* Enlace a Guía de Firebase */}
-          <div className="border-t border-white/[0.06] pt-3 text-center">
+          {/* Pie con enlace a guía */}
+          <div className="border-t border-outline pt-4 text-center">
             <button
               type="button"
               onClick={onOpenFirebaseGuide}
-              className="text-xs text-mint-300 hover:underline"
+              className="text-xs text-primary hover:underline font-medium"
             >
-              ⚙️ ¿Cómo configurar Firebase y hospedar gratis en GitHub?
+              ⚙️ ¿Cómo configurar Firebase gratis para mi propia clase?
             </button>
           </div>
-        </div>
-
-        {/* Info PWA Offline */}
-        <div className="text-center text-xs text-slate-500">
-          📱 Esta aplicación es una PWA instalable. Funciona completamente sin conexión y se sincroniza al detectar WiFi o red cableada.
         </div>
       </div>
     </div>
