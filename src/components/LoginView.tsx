@@ -5,11 +5,11 @@ import { Logo, Spinner, cx } from './ui';
 import { ThemeToggle } from './ThemeToggle';
 
 interface Props {
-  onOpenFirebaseGuide: () => void;
+  onOpenFirebaseGuide?: () => void;
   onEnterDemoMode?: (role: 'teacher' | 'student') => void;
 }
 
-export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
+export function LoginView({ onEnterDemoMode }: Props) {
   const { login } = useAuth();
   const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [identifier, setIdentifier] = useState('');
@@ -199,17 +199,6 @@ export function LoginView({ onOpenFirebaseGuide, onEnterDemoMode }: Props) {
               )}
             </button>
           </form>
-
-          {/* Pie con enlace a guía */}
-          <div className="border-t border-outline pt-4 text-center">
-            <button
-              type="button"
-              onClick={onOpenFirebaseGuide}
-              className="text-xs text-primary hover:underline font-medium"
-            >
-              ⚙️ ¿Cómo configurar Firebase gratis para mi propia clase?
-            </button>
-          </div>
         </div>
       </div>
     </div>
