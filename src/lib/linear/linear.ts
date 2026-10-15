@@ -37,7 +37,7 @@ export function exerciseBadge(ex: Exercise): string {
 /** Secuencias de ejemplo con las que arranca un ejercicio lineal nuevo. */
 export const DEFAULT_OPS: Record<LinearStructure, string[]> = {
   LIST: ['add(5)', 'add(7)', 'add(9)', 'add(1, 4)', 'remove(0)', 'get(1)', 'head()', 'size()'],
-  STACK: ['push(5)', 'push(7)', 'push(9)', 'pop()', 'peek()', 'push(3)', 'size()'],
+  STACK: ['push(5)', 'push(7)', 'push(9)', 'pop()', 'top()', 'push(3)', 'size()'],
   QUEUE: ['enqueue(5)', 'enqueue(7)', 'enqueue(9)', 'dequeue()', 'front()', 'enqueue(3)', 'size()'],
 };
 
@@ -237,12 +237,13 @@ const STACK_OPS: OpDef[] = [
     run: (s) => (s.length === 0 ? fail(s, 'La pila está vacía') : ok(s.slice(0, -1), s[s.length - 1])),
   },
   {
-    name: 'peek',
+    name: 'top',
+    aliases: ['peek'],
     args: [],
     returns: true,
-    signature: 'peek()',
+    signature: 'top()',
     description: 'Devuelve el elemento del tope sin quitarlo.',
-    example: 'peek()',
+    example: 'top()',
     run: (s) => (s.length === 0 ? fail(s, 'La pila está vacía') : ok(s, s[s.length - 1])),
   },
   {

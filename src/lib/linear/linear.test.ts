@@ -60,10 +60,10 @@ describe('lista', () => {
 });
 
 describe('pila y cola', () => {
-  it('pila: LIFO con estado de fondo a tope', () => {
-    const sim = simulate('STACK', 'NUMBER', [], ['push(1)', 'push(2)', 'push(3)', 'pop()', 'peek()', 'size()']);
+  it('pila: LIFO con estado de fondo a tope y operación top() / alias peek()', () => {
+    const sim = simulate('STACK', 'NUMBER', [], ['push(1)', 'push(2)', 'push(3)', 'pop()', 'top()', 'peek()', 'size()']);
     expect(sim.finalState).toEqual(['1', '2']);
-    expect(sim.extracted).toEqual(['3', '2', '2']);
+    expect(sim.extracted).toEqual(['3', '2', '2', '2']);
   });
 
   it('cola: FIFO con estado de frente a final', () => {

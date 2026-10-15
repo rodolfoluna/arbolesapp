@@ -119,7 +119,7 @@ export function LinearExercisePanel({
                 onChange={(e) => update('extracted', e.target.value)}
               />
               <p className="mt-1 text-xs text-text-muted">
-                Incluye lo que devuelven operaciones como remove, get, pop, dequeue, head, peek, size, isEmpty…
+                Incluye lo que devuelven operaciones como remove, get, pop, dequeue, head, top, size, isEmpty…
               </p>
             </div>
 

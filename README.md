@@ -41,7 +41,7 @@ Diseñada para funcionar **100% sin conexión a internet** (offline-first) y sin
    - El profesor configura el estado inicial de la estructura y una secuencia ordenada de operaciones.
    - Catálogo interactivo de operaciones según la estructura seleccionada:
      - **Lista:** `add(x)`, `add(i, x)`, `remove(i)`, `get(i)` / `getElementAt(i)`, `set(i, x)`, `head()`, `tail()`, `indexOf(x)`, `size()`, `isEmpty()`.
-     - **Pila:** `push(x)`, `pop()`, `peek()`, `size()`, `isEmpty()`.
+     - **Pila:** `push(x)`, `pop()`, `top()`, `size()`, `isEmpty()`.
      - **Cola:** `enqueue(x)`, `dequeue()`, `front()`, `size()`, `isEmpty()`.
    - Previsualización paso a paso en vivo para el docente con validación de sintaxis y estado final.
    - El alumno deduce y captura:
