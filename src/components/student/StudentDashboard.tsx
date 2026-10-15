@@ -52,7 +52,7 @@ export function StudentDashboard() {
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <PageHeader
         title={`¡Hola, ${profile?.fullName || 'Alumno'}!`}
-        subtitle="Aquí puedes ver las prácticas y actividades asignadas a tu grupo de Árboles Binarios."
+        subtitle="Aquí puedes ver las prácticas y actividades asignadas a tu grupo de Estructura de Datos."
       />
 
       {loading ? (

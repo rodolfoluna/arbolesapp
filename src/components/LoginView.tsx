@@ -49,10 +49,10 @@ export function LoginView({ onEnterDemoMode }: Props) {
             <Logo className="h-20 w-20 shadow-md rounded-[22px]" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
-            Árboles <span className="text-primary font-bold">Binarios</span>
+            Estructura de <span className="text-primary font-bold">Datos APP</span>
           </h1>
           <p className="mt-1 text-sm text-text-muted max-w-xs mx-auto">
-            Plataforma interactiva para la construcción manual y evaluación de árboles
+            Plataforma interactiva para el aprendizaje de árboles, listas, pilas y colas
           </p>
         </div>
 

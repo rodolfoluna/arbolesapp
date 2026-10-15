@@ -14,7 +14,7 @@ function AppShell() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   if (loading) {
-    return <FullScreenLoader label="Iniciando plataforma de árboles..." />;
+    return <FullScreenLoader label="Iniciando plataforma de Estructura de Datos..." />;
   }
 
   if (!user) {

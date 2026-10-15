@@ -8,6 +8,8 @@ import { parseDataset, randomDataset } from '../../lib/tree/values';
 import { buildExpected } from '../../lib/tree/generate';
 import { computeProps, toFlat } from '../../lib/tree/analyze';
 import { TreeCanvas } from '../tree/TreeCanvas';
+import { LinearExerciseEditor } from './LinearExerciseEditor';
+import { exerciseBadge, isLinearExercise, linearExerciseErrors, newLinearExercise } from '../../lib/linear/linear';
 import { PageHeader, Toggle, cx } from '../ui';
 
 interface Props {
@@ -46,7 +48,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
 
   // Cálculo en vivo del Árbol Canónico y sus Propiedades para la Vista Previa del Profesor
   const preview = useMemo(() => {
-    if (!activeEx) return null;
+    if (!activeEx || isLinearExercise(activeEx)) return null;
     const root = buildExpected(activeEx.treeType, activeEx.dataset, activeEx.dataType);
     const flat = toFlat(root);
     const props = computeProps(root, settings.heightMode, settings.rootIsInternal);
@@ -59,15 +61,19 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
     );
   };
 
-  const handleAddExercise = () => {
+  const handleAddExercise = (kind: 'TREE' | 'LINEAR' = 'TREE') => {
     const nextNum = exercises.length + 1;
-    const newEx: Exercise = {
-      id: `ex_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      title: `Ejercicio ${nextNum}`,
-      treeType: 'AVL',
-      dataType: 'NUMBER',
-      dataset: ['45', '20', '60', '10', '30', '25'],
-    };
+    const id = `ex_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const newEx: Exercise =
+      kind === 'LINEAR'
+        ? newLinearExercise(id, `Ejercicio ${nextNum}`)
+        : {
+            id,
+            title: `Ejercicio ${nextNum}`,
+            treeType: 'AVL',
+            dataType: 'NUMBER',
+            dataset: ['45', '20', '60', '10', '30', '25'],
+          };
     setExercises((prev) => [...prev, newEx]);
     setSelectedExIndex(exercises.length);
   };
@@ -101,6 +107,11 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
       alert('Por favor selecciona un grupo para asignar la actividad.');
       return;
     }
+    const linearErrors = exercises.flatMap(linearExerciseErrors);
+    if (linearErrors.length > 0) {
+      alert('Corrige estos ejercicios antes de publicar:\n\n' + linearErrors.slice(0, 8).join('\n'));
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -126,8 +137,8 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
   return (
     <div className="space-y-6">
       <PageHeader
-        title={activityToEdit ? 'Editar Actividad' : 'Nueva Actividad de Árboles'}
-        subtitle="Configura los ejercicios (por niveles, BST o AVL) y visualiza en tiempo real el árbol esperado."
+        title={activityToEdit ? 'Editar Actividad' : 'Nueva Actividad'}
+        subtitle="Configura ejercicios de árboles (por niveles, BST o AVL) o de estructuras lineales (lista, pila, cola) y revisa la solución esperada en tiempo real."
         actions={
           <div className="flex gap-2">
             <button onClick={onCancel} className="btn-ghost">
@@ -254,13 +265,24 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
             <h3 className="text-lg font-semibold text-white">Ejercicios de la Actividad</h3>
             <span className="text-xs text-slate-400">({exercises.length})</span>
           </div>
-          <button
-            type="button"
-            onClick={handleAddExercise}
-            className="btn-secondary btn-sm"
-          >
-            + Agregar Ejercicio
-          </button>
+          <div className="flex gap-2">
+            <button
+              id="btn-add-tree-exercise"
+              type="button"
+              onClick={() => handleAddExercise('TREE')}
+              className="btn-secondary btn-sm"
+            >
+              + 🌳 Ejercicio de árbol
+            </button>
+            <button
+              id="btn-add-linear-exercise"
+              type="button"
+              onClick={() => handleAddExercise('LINEAR')}
+              className="btn-secondary btn-sm"
+            >
+              + 📋 Lista / Pila / Cola
+            </button>
+          </div>
         </div>
 
         {/* Pestañas de Ejercicios */}
@@ -277,7 +299,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
               onClick={() => setSelectedExIndex(idx)}
             >
               <span>{ex.title}</span>
-              <span className="font-mono text-[10px] text-iris-300">[{ex.treeType}]</span>
+              <span className="font-mono text-[10px] text-iris-300">[{exerciseBadge(ex)}]</span>
               {exercises.length > 1 && (
                 <button
                   type="button"
@@ -296,6 +318,9 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
         </div>
 
         {/* Editor del Ejercicio Seleccionado + Vista Previa Canónica */}
+        {isLinearExercise(activeEx) ? (
+          <LinearExerciseEditor key={activeEx.id} exercise={activeEx} onChange={updateActiveEx} />
+        ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Configuración del Ejercicio */}
           <div className="card space-y-4">
@@ -444,6 +469,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

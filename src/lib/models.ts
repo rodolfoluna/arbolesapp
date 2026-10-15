@@ -1,4 +1,4 @@
-import type { Answers, EvalSettings, Exercise, FlatTree } from './tree/types';
+import type { Answers, EvalSettings, Exercise, FlatTree, LinearAnswers } from './tree/types';
 
 export type Role = 'teacher' | 'student';
 
@@ -50,6 +50,8 @@ export interface Activity {
 export interface ExerciseSubmission {
   tree: FlatTree;
   answers: Answers;
+  /** Solo en ejercicios de estructura lineal (lista/pila/cola). */
+  linearAnswers?: LinearAnswers;
   /** Marca de tiempo del cliente (ms). Sirve para resolver conflictos local vs nube. */
   updatedAt: number;
   submitted: boolean;

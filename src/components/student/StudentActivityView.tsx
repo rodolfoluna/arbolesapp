@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Activity, ExerciseSubmission, Submission } from '../../lib/models';
-import type { Answers, FlatTree } from '../../lib/tree/types';
-import { EMPTY_ANSWERS, EMPTY_TREE, TREE_TYPE_HINT, TREE_TYPE_LABEL } from '../../lib/tree/types';
+import type { Answers, FlatTree, LinearAnswers } from '../../lib/tree/types';
+import { EMPTY_ANSWERS, EMPTY_LINEAR_ANSWERS, EMPTY_TREE, TREE_TYPE_HINT, TREE_TYPE_LABEL } from '../../lib/tree/types';
 import { treeValues } from '../../lib/tree/edit';
 import { valueKey } from '../../lib/tree/values';
 import { evaluateExercise, type Evaluation } from '../../lib/tree/evaluate';
@@ -9,6 +9,14 @@ import { saveExerciseSubmission, subscribeSubmission } from '../../lib/db';
 import { useAuth } from '../../lib/auth';
 import { TreeCanvas } from '../tree/TreeCanvas';
 import { ExerciseQuestions } from './ExerciseQuestions';
+import { LinearExercisePanel } from './LinearExercisePanel';
+import {
+  STRUCTURE_LABEL,
+  STRUCTURE_ORDER_HINT,
+  evaluateLinear,
+  isLinearExercise,
+  type LinearEvaluation,
+} from '../../lib/linear/linear';
 import { cx, ScorePill } from '../ui';
 
 interface Props {
@@ -26,9 +34,12 @@ export function StudentActivityView({ activity, onBack }: Props) {
   const [currentTree, setCurrentTree] = useState<FlatTree>(EMPTY_TREE);
   const [currentAnswers, setCurrentAnswers] = useState<Answers>(EMPTY_ANSWERS);
   const [lastEval, setLastEval] = useState<Evaluation | null>(null);
+  const [currentLinear, setCurrentLinear] = useState<LinearAnswers>(EMPTY_LINEAR_ANSWERS);
+  const [lastLinearEval, setLastLinearEval] = useState<LinearEvaluation | null>(null);
 
   const activeExercise = activity.exercises[activeExIndex] || activity.exercises[0];
   const exId = activeExercise?.id;
+  const isLinear = isLinearExercise(activeExercise);
 
   // Clave de almacenamiento local de respaldo
   const localBackupKey = `tree_sub_${activity.id}_${profile?.controlNumber || 'anon'}_${exId}`;
@@ -51,8 +62,16 @@ export function StudentActivityView({ activity, onBack }: Props) {
     if (remoteData) {
       setCurrentTree(remoteData.tree || EMPTY_TREE);
       setCurrentAnswers(remoteData.answers || EMPTY_ANSWERS);
-      if (remoteData.score !== undefined) {
+      setCurrentLinear(remoteData.linearAnswers || EMPTY_LINEAR_ANSWERS);
+      if (remoteData.score !== undefined && isLinearExercise(activeExercise)) {
+        setLastLinearEval(evaluateLinear(activeExercise, remoteData.linearAnswers));
+        setLastEval(null);
+      } else if (remoteData.score !== undefined) {
         setLastEval(evaluateExercise(activeExercise, activity.settings, remoteData.tree, remoteData.answers));
+        setLastLinearEval(null);
+      } else {
+        setLastEval(null);
+        setLastLinearEval(null);
       }
       return;
     }
@@ -64,6 +83,9 @@ export function StudentActivityView({ activity, onBack }: Props) {
         const parsed = JSON.parse(raw);
         setCurrentTree(parsed.tree || EMPTY_TREE);
         setCurrentAnswers(parsed.answers || EMPTY_ANSWERS);
+        setCurrentLinear(parsed.linearAnswers || EMPTY_LINEAR_ANSWERS);
+        setLastEval(null);
+        setLastLinearEval(null);
         return;
       }
     } catch {
@@ -73,16 +95,23 @@ export function StudentActivityView({ activity, onBack }: Props) {
     // 3. Si es nuevo, inicializar vacío
     setCurrentTree(EMPTY_TREE);
     setCurrentAnswers(EMPTY_ANSWERS);
+    setCurrentLinear(EMPTY_LINEAR_ANSWERS);
     setLastEval(null);
+    setLastLinearEval(null);
   }, [exId, submission, localBackupKey, activeExercise, activity.settings]);
 
   // Guardado local y remoto
-  const persistChanges = (tree: FlatTree, answers: Answers, evalRes?: Evaluation) => {
+  const persistChanges = (
+    tree: FlatTree,
+    answers: Answers,
+    linearAnswers: LinearAnswers,
+    evalRes?: { total: number; structureExact: boolean }
+  ) => {
     // 1. LocalStorage inmediato
     try {
       localStorage.setItem(
         localBackupKey,
-        JSON.stringify({ tree, answers, updatedAt: Date.now() })
+        JSON.stringify({ tree, answers, linearAnswers, updatedAt: Date.now() })
       );
     } catch {
       /* ignore */
@@ -98,6 +127,7 @@ export function StudentActivityView({ activity, onBack }: Props) {
         submitted: !!evalRes || (prevSub?.submitted ?? false),
         attempts: (prevSub?.attempts || 0) + (evalRes ? 1 : 0),
       };
+      if (isLinear) payload.linearAnswers = linearAnswers;
       if (evalRes) {
         payload.submittedAt = Date.now();
         payload.score = evalRes.total;
@@ -118,17 +148,27 @@ export function StudentActivityView({ activity, onBack }: Props) {
 
   const handleTreeChange = (newTree: FlatTree) => {
     setCurrentTree(newTree);
-    persistChanges(newTree, currentAnswers);
+    persistChanges(newTree, currentAnswers, currentLinear);
   };
 
   const handleAnswersChange = (newAnswers: Answers) => {
     setCurrentAnswers(newAnswers);
-    persistChanges(currentTree, newAnswers);
+    persistChanges(currentTree, newAnswers, currentLinear);
+  };
+
+  const handleLinearChange = (newAnswers: LinearAnswers) => {
+    setCurrentLinear(newAnswers);
+    persistChanges(currentTree, currentAnswers, newAnswers);
   };
 
   const handleSaveAndEvaluate = (evalResult: Evaluation) => {
     setLastEval(evalResult);
-    persistChanges(currentTree, currentAnswers, evalResult);
+    persistChanges(currentTree, currentAnswers, currentLinear, evalResult);
+  };
+
+  const handleSaveAndEvaluateLinear = (evalResult: LinearEvaluation) => {
+    setLastLinearEval(evalResult);
+    persistChanges(currentTree, currentAnswers, currentLinear, evalResult);
   };
 
   // Nodos usados en el árbol para tachar chips
@@ -164,18 +204,31 @@ export function StudentActivityView({ activity, onBack }: Props) {
                 {activity.title}
               </h2>
               <div className="text-xs text-text-muted">
-                Tipo pedido:{' '}
-                <span className="font-semibold text-primary">
-                  {TREE_TYPE_LABEL[activeExercise.treeType]}
-                </span>
-                {' · '}
-                <span>{TREE_TYPE_HINT[activeExercise.treeType]}</span>
+                {isLinear ? (
+                  <>
+                    Estructura:{' '}
+                    <span className="font-semibold text-primary">
+                      {STRUCTURE_LABEL[activeExercise.linear!.structure]}
+                    </span>
+                    {' · '}
+                    <span>Ejecuta las operaciones en orden y responde (elementos {STRUCTURE_ORDER_HINT[activeExercise.linear!.structure]}).</span>
+                  </>
+                ) : (
+                  <>
+                    Tipo pedido:{' '}
+                    <span className="font-semibold text-primary">
+                      {TREE_TYPE_LABEL[activeExercise.treeType]}
+                    </span>
+                    {' · '}
+                    <span>{TREE_TYPE_HINT[activeExercise.treeType]}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           {/* Selector de Vistas en Móvil */}
-          <div className="flex rounded-full border border-outline bg-surface-variant p-1 sm:hidden">
+          <div className={cx('flex rounded-full border border-outline bg-surface-variant p-1 sm:hidden', isLinear && '!hidden')}>
             <button
               onClick={() => setMobileTab('tree')}
               className={cx(
@@ -236,6 +289,7 @@ export function StudentActivityView({ activity, onBack }: Props) {
         </div>
 
         {/* Chips del Conjunto de Datos de Referencia */}
+        {!isLinear && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 pt-1 border-t border-outline">
           <span className="text-xs font-medium text-text-muted">Datos a insertar:</span>
           {activeExercise.dataset.map((val, i) => {
@@ -260,9 +314,23 @@ export function StudentActivityView({ activity, onBack }: Props) {
             );
           })}
         </div>
+        )}
       </div>
 
-      {/* Contenedor Principal: 70% Árbol Izquierda / 30% Formulario Derecha (PC) */}
+      {isLinear ? (
+        <div className="relative flex-1 overflow-hidden">
+          <LinearExercisePanel
+            exercise={activeExercise}
+            settings={activity.settings}
+            answers={currentLinear}
+            onChangeAnswers={handleLinearChange}
+            onSaveAndEvaluate={handleSaveAndEvaluateLinear}
+            readOnly={!activity.settings.open}
+            lastEvaluation={lastLinearEval}
+          />
+        </div>
+      ) : (
+      /* Contenedor Principal: 70% Árbol Izquierda / 30% Formulario Derecha (PC) */
       <div className="relative flex flex-1 overflow-hidden">
         {/* Lienzo del Árbol */}
         <div
@@ -301,6 +369,7 @@ export function StudentActivityView({ activity, onBack }: Props) {
           />
         </div>
       </div>
+      )}
     </div>
   );
 }

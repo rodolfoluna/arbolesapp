@@ -60,7 +60,7 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
             )}
             title={
               isFullySynced
-                ? 'Todas tus respuestas y árboles están sincronizados con la nube.'
+                ? 'Todas tus respuestas y ejercicios están sincronizados con la nube.'
                 : !isOnline
                 ? 'Sin conexión a internet. Los cambios se guardan localmente y se subirán al reconectar.'
                 : `Sincronizando ${pending} cambio(s) con la nube...`

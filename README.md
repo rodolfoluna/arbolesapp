@@ -1,6 +1,6 @@
-# 🌳 Árboles Binarios · Aula (PWA Offline-First)
+# 🌳 Estructura de Datos APP (PWA Offline-First)
 
-Aplicación Web Progresiva (**PWA**) instalable en celulares, laptops y computadoras para la enseñanza, construcción interactiva manual y evaluación automática de **Árboles Binarios** (por niveles), **Árboles Binarios de Búsqueda (BST)** y **Árboles AVL balanceados**.
+Aplicación Web Progresiva (**PWA**) instalable en celulares, laptops y computadoras para la enseñanza, construcción interactiva y evaluación automática de **Árboles** (Binario por niveles, BST y AVL) y **Estructuras Lineales** (Listas, Pilas y Colas con simulación secuencial de operaciones).
 
 Diseñada para funcionar **100% sin conexión a internet** (offline-first) y sincronizarse automáticamente con **Google Firebase** cuando el dispositivo detecta conexión WiFi o por cable, alojada gratis en **GitHub Pages**.
 
@@ -37,18 +37,30 @@ Diseñada para funcionar **100% sin conexión a internet** (offline-first) y sin
      - Enorden (10 pts).
      - Postorden (10 pts).
 
-4. **Arquitectura 100% Gratuita (Sin Backend de Pago):**
+4. **Ejercicios de Estructuras Lineales (Listas, Pilas y Colas):**
+   - El profesor configura el estado inicial de la estructura y una secuencia ordenada de operaciones.
+   - Catálogo interactivo de operaciones según la estructura seleccionada:
+     - **Lista:** `add(x)`, `add(i, x)`, `remove(i)`, `get(i)` / `getElementAt(i)`, `set(i, x)`, `head()`, `tail()`, `indexOf(x)`, `size()`, `isEmpty()`.
+     - **Pila:** `push(x)`, `pop()`, `peek()`, `size()`, `isEmpty()`.
+     - **Cola:** `enqueue(x)`, `dequeue()`, `front()`, `size()`, `isEmpty()`.
+   - Previsualización paso a paso en vivo para el docente con validación de sintaxis y estado final.
+   - El alumno deduce y captura:
+     - **Estado final** de la estructura tras ejecutar todas las instrucciones.
+     - **Datos extraídos / retornados** por las operaciones de consulta o extracción.
+   - Calificación determinista y automática (50% estado final, 50% datos extraídos).
+
+5. **Arquitectura 100% Gratuita (Sin Backend de Pago):**
    - **Correo Sintético:** Alumnos inician sesión solo con su **Número de Control** (ej. `22010456`). La app mapea internamente a `22010456@arboles.app`.
    - **Alta Masiva por CSV con Instancia Secundaria:** El profesor sube un archivo `.csv` con `NumeroControl, Nombre`. El navegador genera contraseñas aleatorias de 6 caracteres mediante una instancia secundaria de Firebase Auth en memoria (sin cerrar la sesión del profesor) y descarga automáticamente `credenciales_iniciales.csv`.
    - **Primer Inicio Obligatorio:** Si `mustChangePassword == true`, la app bloquea el acceso hasta que el alumno defina su propia contraseña.
    - **Restablecimiento de Contraseña:** Genera una nueva credencial temporal sin perder las entregas previas del alumno.
 
-5. **Panel del Docente y Matriz de Avances en Tiempo Real:**
+6. **Panel del Docente y Matriz de Avances en Tiempo Real:**
    - Monitoreo en vivo de avances y promedios por actividad.
-   - Clic en cualquier celda para ver el **árbol del alumno lado a lado con el árbol correcto**, con desglose rubro por rubro.
+   - Clic en cualquier celda para ver el desglose rubro por rubro tanto en ejercicios de árboles como de estructuras lineales.
    - Exportación de calificaciones a archivo CSV / Excel.
 
-6. **Offline-First:**
+7. **Offline-First:**
    - Caché persistente multi-pestaña en **IndexedDB** (`persistentLocalCache` + `persistentMultipleTabManager`).
    - Service Worker con precaché de todas las fuentes, íconos y bundle compilado vía **Vite PWA**.
    - Indicador visual: 🟢 Sincronizado en la nube / 🟡 Modo sin conexión (Guardado en dispositivo).
@@ -62,7 +74,7 @@ Diseñada para funcionar **100% sin conexión a internet** (offline-first) y sin
 - **PWA:** `vite-plugin-pwa` + `Workbox` (Service Worker)
 - **Base de Datos & Auth:** Firebase Cloud Firestore + Firebase Authentication (Plan Spark gratuito)
 - **Manipulación de CSV:** PapaParse
-- **Testing:** Vitest (11 pruebas unitarias automáticas)
+- **Testing:** Vitest (27 pruebas unitarias automáticas de árboles y estructuras lineales)
 - **CI/CD & Hosting:** GitHub Actions + GitHub Pages (HTTPS gratuito)
 
 ---
@@ -74,7 +86,7 @@ Diseñada para funcionar **100% sin conexión a internet** (offline-first) y sin
    npm install
    ```
 
-2. Ejecuta las pruebas unitarias del motor de árboles:
+2. Ejecuta las pruebas unitarias:
    ```bash
    npx vitest run
    ```

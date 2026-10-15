@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Activity, Group, Submission, UserProfile } from '../../lib/models';
 import type { Exercise } from '../../lib/tree/types';
 import { subscribeSubmissionsByActivity, resetExerciseSubmission } from '../../lib/db';
-import { evaluateExercise, type Evaluation } from '../../lib/tree/evaluate';
+import { evaluateExercise } from '../../lib/tree/evaluate';
+import {
+  STRUCTURE_LABEL,
+  STRUCTURE_ORDER_HINT,
+  evaluateLinear,
+  exerciseBadge,
+  isLinearExercise,
+} from '../../lib/linear/linear';
 import { buildExpected } from '../../lib/tree/generate';
 import { toFlat } from '../../lib/tree/analyze';
 import { downloadCsv } from '../../lib/accounts';
@@ -15,11 +22,22 @@ interface Props {
   students: UserProfile[];
 }
 
+/** Rubro revisado (común a ejercicios de árbol y de estructura lineal). */
+interface ReviewItem {
+  key: string;
+  label: string;
+  correct: boolean;
+  points: number;
+  max: number;
+  expected: string;
+  given: string;
+}
+
 interface DetailModalState {
   student: UserProfile;
   exercise: Exercise;
   submission: Submission | null;
-  evalResult: Evaluation;
+  evalResult: { total: number; structureExact: boolean; items: ReviewItem[] };
 }
 
 export function ProgressMatrix({ activity, group, students }: Props) {
@@ -42,12 +60,9 @@ export function ProgressMatrix({ activity, group, students }: Props) {
   const handleOpenDetail = (student: UserProfile, exercise: Exercise) => {
     const sub = submissions.find((s) => s.controlNumber === student.controlNumber) || null;
     const exData = sub?.exercisesData?.[exercise.id];
-    const evalResult = evaluateExercise(
-      exercise,
-      activity.settings,
-      exData?.tree,
-      exData?.answers
-    );
+    const evalResult = isLinearExercise(exercise)
+      ? evaluateLinear(exercise, exData?.linearAnswers)
+      : evaluateExercise(exercise, activity.settings, exData?.tree, exData?.answers);
     setDetailModal({ student, exercise, submission: sub, evalResult });
   };
 
@@ -162,7 +177,7 @@ export function ProgressMatrix({ activity, group, students }: Props) {
                             <button
                               onClick={() => handleOpenDetail(st, ex)}
                               className="rounded-lg p-1 transition hover:bg-white/[0.06]"
-                              title="Toca para ver el árbol del alumno lado a lado con el correcto"
+                              title="Toca para ver el detalle de la entrega del alumno"
                             >
                               {isSubmitted ? (
                                 <ScorePill score={score} />
@@ -244,16 +259,31 @@ export function ProgressMatrix({ activity, group, students }: Props) {
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-semibold text-white">
-                  {detailModal.exercise.title} [{detailModal.exercise.treeType}]
+                  {detailModal.exercise.title} [{exerciseBadge(detailModal.exercise)}]
                 </h4>
                 <div className="text-xs text-slate-400">
-                  Conjunto de datos: {detailModal.exercise.dataset.join(', ')}
+                  {isLinearExercise(detailModal.exercise)
+                    ? `Estado inicial: ${detailModal.exercise.dataset.join(', ') || `${STRUCTURE_LABEL[detailModal.exercise.linear!.structure]} vacía`}`
+                    : `Conjunto de datos: ${detailModal.exercise.dataset.join(', ')}`}
                 </div>
               </div>
               <ScorePill score={detailModal.evalResult.total} />
             </div>
 
-            {/* Comparación Visual de Árboles Lado a Lado */}
+            {isLinearExercise(detailModal.exercise) ? (
+              <div className="card space-y-2 text-xs">
+                <div className="font-semibold text-text-primary">
+                  {STRUCTURE_LABEL[detailModal.exercise.linear!.structure]} · elementos {STRUCTURE_ORDER_HINT[detailModal.exercise.linear!.structure]}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {detailModal.exercise.linear!.ops.map((op, i) => (
+                    <code key={i} className="rounded-lg border border-outline bg-surface px-2 py-1 font-mono text-primary">
+                      {i + 1}. {op}
+                    </code>
+                  ))}
+                </div>
+              </div>
+            ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {/* Árbol del Alumno */}
               <div className="card overflow-hidden !p-0">
@@ -315,11 +345,14 @@ export function ProgressMatrix({ activity, group, students }: Props) {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Desglose de Respuestas del Cuestionario */}
             <div className="card overflow-hidden !p-0">
               <div className="border-b border-white/[0.08] px-4 py-2 text-xs font-semibold text-white">
-                Comparación de Respuestas Teóricas y Recorridos
+                {isLinearExercise(detailModal.exercise)
+                  ? 'Evaluación de Estado Final y Datos Extraídos'
+                  : 'Comparación de Respuestas Teóricas y Recorridos'}
               </div>
               <table className="table-base text-xs">
                 <thead>

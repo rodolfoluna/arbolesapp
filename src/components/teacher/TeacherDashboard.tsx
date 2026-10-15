@@ -11,6 +11,7 @@ import { GroupManager } from './GroupManager';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ProgressMatrix } from './ProgressMatrix';
 import { ConfirmDialog, EmptyState, PageHeader, Spinner, cx } from '../ui';
+import { STRUCTURE_LABEL, isLinearExercise } from '../../lib/linear/linear';
 
 type TeacherTab = 'activities' | 'matrix' | 'students';
 
@@ -145,7 +146,7 @@ export function TeacherDashboard() {
         <div className="space-y-6">
           <PageHeader
             title="Actividades Creadas"
-            subtitle="Configura prácticas con ejercicios de árboles binarios, BST y AVL para tus alumnos."
+            subtitle="Configura prácticas con ejercicios de árboles o de estructuras lineales (listas, pilas y colas) para tus alumnos."
           />
 
           {loading ? (
@@ -157,7 +158,7 @@ export function TeacherDashboard() {
               icon="🌱"
               title="Aún no tienes actividades creadas"
             >
-              Haz clic en "+ Nueva Actividad" para diseñar tu primera práctica con ejercicios de árboles binarios, BST y AVL.
+              Haz clic en "+ Nueva Actividad" para diseñar tu primera práctica con ejercicios de árboles o estructuras lineales.
             </EmptyState>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -198,7 +199,9 @@ export function TeacherDashboard() {
                             key={ex.id}
                             className="rounded-full bg-surface-variant px-2.5 py-0.5 font-mono text-[10px] text-text-secondary"
                           >
-                            Ej {i + 1}: {ex.treeType} ({ex.dataset.length})
+                            {isLinearExercise(ex)
+                              ? `Ej ${i + 1}: ${STRUCTURE_LABEL[ex.linear!.structure]} (${ex.linear!.ops.length} ops)`
+                              : `Ej ${i + 1}: ${ex.treeType} (${ex.dataset.length})`}
                           </span>
                         ))}
                       </div>

@@ -17,7 +17,7 @@ export function Logo({ className = 'h-9 w-9' }: { className?: string }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={cx('shrink-0 select-none transition-transform duration-200 hover:scale-105', className)}
-      aria-label="Logo Árboles Binarios"
+      aria-label="Logo Estructura de Datos APP"
     >
       <defs>
         <linearGradient id="m3-blue" x1="0" y1="0" x2="1" y2="1">
@@ -95,7 +95,7 @@ export function Brand({ subtitle }: { subtitle?: string }) {
       <Logo className="h-10 w-10" />
       <div className="leading-tight">
         <div className="text-base font-semibold tracking-tight text-text-primary">
-          Árboles <span className="font-bold text-primary">Binarios</span>
+          Estructura de <span className="font-bold text-primary">Datos APP</span>
         </div>
         {subtitle && <div className="text-xs text-text-muted">{subtitle}</div>}
       </div>

@@ -37,13 +37,41 @@ export interface EvalSettings {
   rootIsInternal: boolean;
 }
 
+/** Tipo de ejercicio: árbol (por defecto, si no se indica) o estructura lineal. */
+export type ExerciseKind = 'TREE' | 'LINEAR';
+
+/** Estructura lineal sobre la que se ejecuta la secuencia de operaciones. */
+export type LinearStructure = 'LIST' | 'STACK' | 'QUEUE';
+
+/** Configuración de un ejercicio de estructura lineal. */
+export interface LinearConfig {
+  structure: LinearStructure;
+  /** Secuencia de operaciones, p. ej. ["add(5)", "remove(0)", "head()"]. */
+  ops: string[];
+}
+
 export interface Exercise {
   id: string;
   title: string;
+  /** Si se omite, el ejercicio es de árbol (compatibilidad con actividades anteriores). */
+  kind?: ExerciseKind;
   treeType: TreeType;
   dataType: DataType;
+  /** Árbol: datos a insertar. Estructura lineal: contenido inicial de la estructura. */
   dataset: string[];
+  /** Solo para kind === 'LINEAR'. */
+  linear?: LinearConfig;
 }
+
+/** Respuestas del alumno en un ejercicio de estructura lineal. */
+export interface LinearAnswers {
+  /** Estado final de la estructura (elementos separados por coma, en orden). */
+  finalState: string;
+  /** Datos extraídos/devueltos por las operaciones, en orden. */
+  extracted: string;
+}
+
+export const EMPTY_LINEAR_ANSWERS: LinearAnswers = { finalState: '', extracted: '' };
 
 export interface Answers {
   root: string;
