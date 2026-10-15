@@ -374,7 +374,7 @@ export function saveActivity(a: Activity): Promise<void> {
   const { id, ...data } = a;
   const now = Date.now();
   return trackWrite(
-    setDoc(doc(getDb(), 'activities', id), { ...data, createdAt: a.createdAt ?? now, updatedAt: now }),
+    setDoc(doc(getDb(), 'activities', id), { ...stripUndefined(data), createdAt: a.createdAt ?? now, updatedAt: now }),
   );
 }
 
