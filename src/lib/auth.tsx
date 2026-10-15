@@ -6,8 +6,9 @@ import {
   updatePassword,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import {
+  EMAIL_DOMAIN,
   TEACHER_EMAIL,
   getDb,
   getFirebaseAuth,
@@ -73,8 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const email = (u.email ?? '').toLowerCase();
-      if (TEACHER_EMAIL && email === TEACHER_EMAIL) {
-        setProfile({
+      const isStudentEmail = email.endsWith('@' + EMAIL_DOMAIN);
+      const isTeacherUser = !isStudentEmail || (TEACHER_EMAIL && email === TEACHER_EMAIL);
+
+      if (isTeacherUser) {
+        const teacherProfile: UserProfile = {
           uid: u.uid,
           role: 'teacher',
           controlNumber: '',
@@ -82,8 +86,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           groupIds: [],
           mustChangePassword: false,
-        });
+        };
+        setProfile(teacherProfile);
         setLoading(false);
+
+        // Aseguramos que el documento del profesor exista en Firestore para reglas y consultas
+        setDoc(
+          doc(getDb(), 'users', u.uid),
+          {
+            uid: u.uid,
+            role: 'teacher',
+            email,
+            fullName: u.displayName || 'Profesor',
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        ).catch((err) => {
+          console.warn('[auth] no se pudo sincronizar perfil de profesor:', err);
+        });
         return;
       }
       // Alumno: el perfil se escucha en tiempo real (y se sirve desde caché sin conexión).

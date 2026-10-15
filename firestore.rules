@@ -2,15 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    // Un usuario es profesor si:
+    // 1. Su correo no pertenece al dominio sintético de los alumnos (@arboles.app)
+    // 2. O su documento en /users/{uid} tiene role == "teacher"
     function isTeacher() {
       return isAuthenticated() && (
-        request.auth.token.email == "profesor@ejemplo.com" || // Reemplaza con tu correo o configúralo en Custom Claims
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "teacher"
+        (request.auth.token.email != null && !request.auth.token.email.matches('(?i).*@arboles\\.app$')) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "teacher")
       );
     }
 
@@ -25,7 +28,7 @@ service cloud.firestore {
     // Colección de Usuarios
     match /users/{uid} {
       allow read: if isAuthenticated();
-      allow write: if isTeacher() || (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChangePassword', 'passwordChangedAt']));
+      allow write: if isTeacher() || isOwner(uid);
     }
 
     // Colección de Grupos
@@ -41,11 +44,8 @@ service cloud.firestore {
     }
 
     // Colección de Entregas (Submissions)
-    // El ID es de la forma: {activityId}_{controlNumber}
     match /submissions/{subId} {
-      allow read: if isTeacher() || (
-        isAuthenticated() && resource.data.studentUid == request.auth.uid
-      );
+      allow read: if isAuthenticated();
       allow create, update: if isTeacher() || (
         isAuthenticated() && request.resource.data.studentUid == request.auth.uid
       );
@@ -54,7 +54,7 @@ service cloud.firestore {
 
     // Colección de Alias de Inicio de Sesión (Logins por Número de Control)
     match /logins/{controlNumber} {
-      allow read: if true; // Permite al login del alumno buscar el alias de correo sintético
+      allow read: if true;
       allow write: if isTeacher();
     }
 
