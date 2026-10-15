@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && (
+        request.auth.token.email == "profesor@ejemplo.com" || // Reemplaza con tu correo o configúralo en Custom Claims
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "teacher"
+      );
+    }
+
+    function isStudent() {
+      return isAuthenticated() && !isTeacher();
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Colección de Usuarios
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher() || (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChangePassword', 'passwordChangedAt']));
+    }
+
+    // Colección de Grupos
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher();
+    }
+
+    // Colección de Actividades
+    match /activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher();
+    }
+
+    // Colección de Entregas (Submissions)
+    // El ID es de la forma: {activityId}_{controlNumber}
+    match /submissions/{subId} {
+      allow read: if isTeacher() || (
+        isAuthenticated() && resource.data.studentUid == request.auth.uid
+      );
+      allow create, update: if isTeacher() || (
+        isAuthenticated() && request.resource.data.studentUid == request.auth.uid
+      );
+      allow delete: if isTeacher();
+    }
+
+    // Colección de Alias de Inicio de Sesión (Logins por Número de Control)
+    match /logins/{controlNumber} {
+      allow read: if true; // Permite al login del alumno buscar el alias de correo sintético
+      allow write: if isTeacher();
+    }
+
+    // Colección de Credenciales Temporales Iniciales
+    match /credentials/{controlNumber} {
+      allow read, write: if isTeacher();
+    }
+  }
+}

@@ -1,0 +1,199 @@
+@import '@fontsource-variable/outfit';
+@import '@fontsource-variable/jetbrains-mono';
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------ */
+/* Tokens de diseño                                                    */
+/* ------------------------------------------------------------------ */
+@theme {
+  --font-sans: 'Outfit Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --color-ink-950: #070b14;
+  --color-ink-900: #0b1120;
+  --color-ink-850: #0f172a;
+  --color-ink-800: #131c33;
+  --color-ink-700: #1c2742;
+  --color-ink-600: #2a3756;
+
+  --color-leaf-300: #86efac;
+  --color-leaf-400: #4ade80;
+  --color-mint-300: #6ee7b7;
+  --color-mint-400: #34d399;
+  --color-mint-500: #10b981;
+  --color-aqua-400: #22d3ee;
+  --color-aqua-500: #06b6d4;
+  --color-iris-300: #c4b5fd;
+  --color-iris-400: #a78bfa;
+  --color-iris-500: #8b5cf6;
+  --color-sun-400: #fbbf24;
+  --color-coral-400: #fb7185;
+
+  --shadow-glow: 0 0 0 1px rgb(52 211 153 / 0.25), 0 8px 30px -6px rgb(16 185 129 / 0.35);
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.04) inset, 0 20px 40px -24px rgb(0 0 0 / 0.6);
+
+  --animate-fade-up: fade-up 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-pop: pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+  --animate-pulse-soft: pulse-soft 2.2s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply min-h-dvh bg-ink-950 font-sans text-slate-200 antialiased;
+    background-image:
+      radial-gradient(60rem 40rem at 110% -10%, rgb(34 211 238 / 0.10), transparent 60%),
+      radial-gradient(50rem 36rem at -10% 10%, rgb(139 92 246 / 0.12), transparent 60%),
+      radial-gradient(40rem 30rem at 50% 120%, rgb(16 185 129 / 0.10), transparent 60%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: rgb(52 211 153 / 0.35);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+  }
+  input[type='number']::-webkit-inner-spin-button {
+    opacity: 0.4;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Componentes reutilizables (@utility permite reutilizarlos con @apply) */
+/* ------------------------------------------------------------------ */
+@utility glass {
+  @apply border border-white/[0.07] bg-ink-850/60 backdrop-blur-xl;
+  box-shadow: var(--shadow-card);
+}
+@utility card {
+  @apply glass rounded-2xl p-5;
+}
+@utility card-hover {
+  @apply transition duration-200 hover:-translate-y-0.5 hover:border-mint-400/30;
+}
+
+@utility btn {
+  @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium whitespace-nowrap transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40;
+}
+@utility btn-sm {
+  @apply rounded-lg px-3 py-1.5 text-xs;
+}
+@utility btn-primary {
+  @apply btn bg-linear-to-r from-mint-400 to-aqua-400 font-semibold text-ink-950 hover:brightness-110;
+  box-shadow: var(--shadow-glow);
+}
+@utility btn-secondary {
+  @apply btn border border-white/10 bg-white/[0.06] text-slate-100 hover:border-white/20 hover:bg-white/[0.11];
+}
+@utility btn-ghost {
+  @apply btn text-slate-300 hover:bg-white/[0.06] hover:text-white;
+}
+@utility btn-danger {
+  @apply btn border border-coral-400/30 bg-coral-400/10 text-coral-400 hover:bg-coral-400/20;
+}
+@utility btn-iris {
+  @apply btn border border-iris-400/30 bg-iris-500/15 text-iris-300 hover:bg-iris-500/25;
+}
+
+@utility input {
+  @apply w-full rounded-xl border border-white/10 bg-ink-950/60 px-3.5 py-2.5 text-[15px] text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-mint-400/60 focus:ring-4 focus:ring-mint-400/10;
+}
+@utility input-mono {
+  @apply input font-mono text-sm tracking-wide;
+}
+@utility label {
+  @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-400;
+}
+
+@utility chip {
+  @apply inline-flex min-w-9 select-none items-center justify-center rounded-lg border px-2.5 py-1 font-mono text-sm transition duration-150;
+}
+@utility chip-on {
+  @apply chip border-mint-400/40 bg-mint-400/10 text-mint-300 hover:bg-mint-400/20;
+}
+@utility chip-off {
+  @apply chip border-white/5 bg-white/[0.03] text-slate-500 line-through decoration-slate-600;
+}
+
+@utility badge {
+  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+
+@utility gradient-text {
+  @apply bg-linear-to-r from-mint-300 via-aqua-400 to-iris-300 bg-clip-text text-transparent;
+}
+
+@layer components {
+  .table-base {
+    @apply w-full text-sm;
+  }
+  .table-base th {
+    @apply px-3 py-2.5 text-left text-xs font-medium uppercase tracking-wider text-slate-400;
+  }
+  .table-base td {
+    @apply border-t border-white/[0.05] px-3 py-2.5;
+  }
+  .table-base tbody tr {
+    @apply transition-colors hover:bg-white/[0.025];
+  }
+}
+
+/* Lienzo SVG */
+.tree-canvas {
+  touch-action: none;
+  background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.tree-node {
+  cursor: pointer;
+  transition: transform 0.18s ease;
+}
+.tree-node-enter {
+  animation: pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.ghost-slot {
+  cursor: pointer;
+  animation: pulse-soft 2.2s ease-in-out infinite;
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
