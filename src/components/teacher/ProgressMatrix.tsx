@@ -177,7 +177,7 @@ export function ProgressMatrix({ activity, group, students }: Props) {
                             <button
                               onClick={() => handleOpenDetail(st, ex)}
                               className="rounded-lg p-1 transition hover:bg-white/[0.06]"
-                              title="Toca para ver el detalle de la entrega del alumno"
+                              title={`Toca para ver el detalle. Intentos: ${exData?.attempts ?? 0}${activity.settings.maxAttempts ? ` / ${activity.settings.maxAttempts}` : ''}`}
                             >
                               {isSubmitted ? (
                                 <ScorePill score={score} />
@@ -267,7 +267,16 @@ export function ProgressMatrix({ activity, group, students }: Props) {
                     : `Conjunto de datos: ${detailModal.exercise.dataset.join(', ')}`}
                 </div>
               </div>
-              <ScorePill score={detailModal.evalResult.total} />
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-outline bg-surface-variant px-2.5 py-1 text-xs text-text-muted font-mono">
+                  Intentos:{' '}
+                  <strong className="text-text-primary">
+                    {detailModal.submission?.exercisesData?.[detailModal.exercise.id]?.attempts ?? 0}
+                  </strong>
+                  {activity.settings.maxAttempts ? ` / ${activity.settings.maxAttempts}` : ' (ilimitados)'}
+                </span>
+                <ScorePill score={detailModal.evalResult.total} />
+              </div>
             </div>
 
             {isLinearExercise(detailModal.exercise) ? (

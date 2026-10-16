@@ -27,6 +27,13 @@ export interface ActivitySettings extends EvalSettings {
   showFeedback: boolean;
   /** Si es false, la actividad queda cerrada (solo lectura para el alumno). */
   open: boolean;
+  /**
+   * Número máximo de intentos permitidos por ejercicio para evaluar y corregir.
+   * 0 (o no definido) = intentos ilimitados (puede corregir indefinidamente).
+   * 1 = un solo intento (sin oportunidad de corregir).
+   * > 1 = número específico de intentos.
+   */
+  maxAttempts?: number;
 }
 
 export const DEFAULT_SETTINGS: ActivitySettings = {
@@ -34,6 +41,7 @@ export const DEFAULT_SETTINGS: ActivitySettings = {
   rootIsInternal: false,
   showFeedback: true,
   open: true,
+  maxAttempts: 0,
 };
 
 export interface Activity {

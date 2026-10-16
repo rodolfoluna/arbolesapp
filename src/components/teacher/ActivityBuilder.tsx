@@ -256,6 +256,94 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
             />
           </div>
         </div>
+
+        {/* Intentos de Respuesta y Corrección */}
+        <div className="border-t border-white/[0.06] pt-4">
+          <label className="label" htmlFor="act-max-attempts">
+            Oportunidades de Respuesta y Corrección (Intentos por ejercicio)
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <input
+                id="act-max-attempts"
+                type="number"
+                min="0"
+                max="99"
+                className="input w-24 text-center font-mono font-bold"
+                value={settings.maxAttempts ?? 0}
+                onChange={(e) => {
+                  const val = Math.max(0, parseInt(e.target.value, 10) || 0);
+                  setSettings({ ...settings, maxAttempts: val });
+                }}
+              />
+              <span className="text-xs text-slate-400 font-mono">
+                {(settings.maxAttempts ?? 0) === 0
+                  ? 'intentos (0 = infinitos)'
+                  : (settings.maxAttempts ?? 0) === 1
+                  ? 'intento'
+                  : 'intentos'}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, maxAttempts: 0 })}
+                className={cx(
+                  'btn-sm text-xs rounded-lg border transition',
+                  (settings.maxAttempts ?? 0) === 0
+                    ? 'border-mint-400/50 bg-mint-400/15 text-mint-300 font-semibold'
+                    : 'border-white/5 bg-white/[0.02] text-slate-400 hover:text-slate-200'
+                )}
+              >
+                0 (Ilimitados / Corregir)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, maxAttempts: 1 })}
+                className={cx(
+                  'btn-sm text-xs rounded-lg border transition',
+                  settings.maxAttempts === 1
+                    ? 'border-mint-400/50 bg-mint-400/15 text-mint-300 font-semibold'
+                    : 'border-white/5 bg-white/[0.02] text-slate-400 hover:text-slate-200'
+                )}
+              >
+                1 (Sin corrección)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, maxAttempts: 2 })}
+                className={cx(
+                  'btn-sm text-xs rounded-lg border transition',
+                  settings.maxAttempts === 2
+                    ? 'border-mint-400/50 bg-mint-400/15 text-mint-300 font-semibold'
+                    : 'border-white/5 bg-white/[0.02] text-slate-400 hover:text-slate-200'
+                )}
+              >
+                2 (1 corrección)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettings({ ...settings, maxAttempts: 3 })}
+                className={cx(
+                  'btn-sm text-xs rounded-lg border transition',
+                  settings.maxAttempts === 3
+                    ? 'border-mint-400/50 bg-mint-400/15 text-mint-300 font-semibold'
+                    : 'border-white/5 bg-white/[0.02] text-slate-400 hover:text-slate-200'
+                )}
+              >
+                3 intentos
+              </button>
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-slate-400">
+            {(settings.maxAttempts ?? 0) === 0
+              ? '💡 Los alumnos pueden verificar su respuesta, revisar aciertos y errores, y corregirla cuantas veces lo deseen.'
+              : (settings.maxAttempts ?? 0) === 1
+              ? '🔒 Solo 1 intento: al pulsar "Guardar y Evaluar", el ejercicio se califica definitivamente y el alumno no podrá corregirlo.'
+              : `🎯 Los alumnos tienen un máximo de ${settings.maxAttempts} intentos para verificar y corregir cada ejercicio de esta actividad.`}
+          </p>
+        </div>
       </div>
 
       {/* Gestor de Ejercicios */}

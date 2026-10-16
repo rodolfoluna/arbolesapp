@@ -3,7 +3,7 @@ import type { Answers, Exercise, FlatTree } from '../../lib/tree/types';
 import type { ActivitySettings } from '../../lib/models';
 import { evaluateExercise, type Evaluation } from '../../lib/tree/evaluate';
 import { treeValues } from '../../lib/tree/edit';
-import { ScorePill } from '../ui';
+import { ScorePill, cx } from '../ui';
 
 interface Props {
   exercise: Exercise;
@@ -14,6 +14,8 @@ interface Props {
   onSaveAndEvaluate: (evaluation: Evaluation) => void;
   readOnly?: boolean;
   lastEvaluation?: Evaluation | null;
+  attempts?: number;
+  maxAttempts?: number;
 }
 
 export function ExerciseQuestions({
@@ -25,18 +27,31 @@ export function ExerciseQuestions({
   onSaveAndEvaluate,
   readOnly = false,
   lastEvaluation,
+  attempts = 0,
+  maxAttempts,
 }: Props) {
   const [activeField, setActiveField] = useState<keyof Answers | null>(null);
+  const [pasteBlocked, setPasteBlocked] = useState(false);
   const currentTreeValues = treeValues(tree);
 
+  const max = maxAttempts ?? settings.maxAttempts ?? 0;
+  const hasExhaustedAttempts = max > 0 && attempts >= max;
+  const isReadOnly = readOnly || hasExhaustedAttempts;
+
+  const handleBlockedPaste = (e: React.ClipboardEvent | React.DragEvent) => {
+    e.preventDefault();
+    setPasteBlocked(true);
+    setTimeout(() => setPasteBlocked(false), 3500);
+  };
+
   const update = (key: keyof Answers, val: string) => {
-    if (readOnly) return;
+    if (isReadOnly) return;
     onChangeAnswers({ ...answers, [key]: val });
   };
 
   // Ayudante para agregar un valor seleccionado con un clic a campos de lista
   const appendToField = (key: keyof Answers, val: string) => {
-    if (readOnly) return;
+    if (isReadOnly) return;
     const current = answers[key].trim();
     if (key === 'root' || key === 'height') {
       update(key, val);
@@ -50,6 +65,7 @@ export function ExerciseQuestions({
   };
 
   const handleEvaluate = () => {
+    if (isReadOnly) return;
     const evalResult = evaluateExercise(exercise, settings, tree, answers);
     onSaveAndEvaluate(evalResult);
   };
@@ -70,6 +86,46 @@ export function ExerciseQuestions({
           )}
         </div>
 
+        {/* Banner de Estado de Intentos */}
+        {max > 0 && (
+          <div
+            className={cx(
+              'rounded-xl border p-2.5 text-xs font-medium flex items-center justify-between gap-2',
+              hasExhaustedAttempts
+                ? 'border-red-500/40 bg-red-500/10 text-red-500 dark:text-red-400'
+                : attempts > 0
+                ? 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                : 'border-primary/40 bg-primary/10 text-primary'
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm">
+                {hasExhaustedAttempts ? '🔒' : attempts > 0 ? '⚠️' : '🎯'}
+              </span>
+              <span>
+                {hasExhaustedAttempts
+                  ? `Intentos agotados (${attempts}/${max}). Este ejercicio ya no se puede modificar.`
+                  : max === 1
+                  ? 'Solo tienes 1 intento. Al pulsar "Guardar y Evaluar" se registrará tu nota final sin corrección.'
+                  : attempts > 0
+                  ? `Has usado ${attempts} de ${max} intentos. Te queda ${max - attempts} intento(s) para corregir.`
+                  : `Tienes hasta ${max} intentos para verificar y corregir tus respuestas.`}
+              </span>
+            </div>
+            <span className="shrink-0 rounded-full bg-surface-variant/80 px-2 py-0.5 font-mono text-[11px] font-bold">
+              {attempts}/{max}
+            </span>
+          </div>
+        )}
+
+        {/* Notificación cuando intenta pegar texto */}
+        {pasteBlocked && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/15 p-2.5 text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2 animate-fade-up">
+            <span>🚫</span>
+            <span>No está permitido pegar texto en las respuestas. Por favor escribe tu respuesta manualmente.</span>
+          </div>
+        )}
+
         {/* Criterios activos del profesor */}
         <div className="rounded-xl border border-outline bg-surface-variant/40 p-2.5 text-[11px] text-text-muted">
           <span className="font-medium text-text-primary">Criterio de clase: </span>
@@ -83,7 +139,7 @@ export function ExerciseQuestions({
         </div>
 
         {/* Chips de apoyo rápido para evitar errores de tipeo en celular */}
-        {currentTreeValues.length > 0 && !readOnly && (
+        {currentTreeValues.length > 0 && !isReadOnly && (
           <div className="rounded-xl border border-iris-500/20 bg-iris-500/5 p-2.5">
             <div className="mb-1 text-[11px] font-medium text-iris-300">
               Valores en tu árbol (toca para insertar en el campo activo):
@@ -118,10 +174,13 @@ export function ExerciseQuestions({
               type="text"
               className="input-mono text-sm"
               placeholder="Ej: 30"
-              disabled={readOnly}
+              disabled={isReadOnly}
               value={answers.root}
               onFocus={() => setActiveField('root')}
               onChange={(e) => update('root', e.target.value)}
+              onPaste={handleBlockedPaste}
+              onDrop={handleBlockedPaste}
+              autoComplete="off"
             />
           </div>
 
@@ -137,10 +196,13 @@ export function ExerciseQuestions({
               max="20"
               className="input-mono text-sm"
               placeholder="Ej: 3"
-              disabled={readOnly}
+              disabled={isReadOnly}
               value={answers.height}
               onFocus={() => setActiveField('height')}
               onChange={(e) => update('height', e.target.value)}
+              onPaste={handleBlockedPaste}
+              onDrop={handleBlockedPaste}
+              autoComplete="off"
             />
           </div>
 
@@ -154,10 +216,13 @@ export function ExerciseQuestions({
               type="text"
               className="input-mono text-sm"
               placeholder="Ej: 10, 25, 60"
-              disabled={readOnly}
+              disabled={isReadOnly}
               value={answers.leaves}
               onFocus={() => setActiveField('leaves')}
               onChange={(e) => update('leaves', e.target.value)}
+              onPaste={handleBlockedPaste}
+              onDrop={handleBlockedPaste}
+              autoComplete="off"
             />
           </div>
 
@@ -171,10 +236,13 @@ export function ExerciseQuestions({
               type="text"
               className="input-mono text-sm"
               placeholder="Ej: 20, 45 (o '-' si ninguno)"
-              disabled={readOnly}
+              disabled={isReadOnly}
               value={answers.internals}
               onFocus={() => setActiveField('internals')}
               onChange={(e) => update('internals', e.target.value)}
+              onPaste={handleBlockedPaste}
+              onDrop={handleBlockedPaste}
+              autoComplete="off"
             />
           </div>
 
@@ -188,10 +256,13 @@ export function ExerciseQuestions({
               type="text"
               className="input-mono text-sm"
               placeholder="Ej: 30, 20, 10, 25, 45, 60"
-              disabled={readOnly}
+              disabled={isReadOnly}
               value={answers.preorder}
               onFocus={() => setActiveField('preorder')}
               onChange={(e) => update('preorder', e.target.value)}
+              onPaste={handleBlockedPaste}
+              onDrop={handleBlockedPaste}
+              autoComplete="off"
             />
           </div>
 
@@ -205,10 +276,13 @@ export function ExerciseQuestions({
               type="text"
               className="input-mono text-sm"
               placeholder="Ej: 10, 20, 25, 30, 45, 60"
-              disabled={readOnly}
+              disabled={isReadOnly}
               value={answers.inorder}
               onFocus={() => setActiveField('inorder')}
               onChange={(e) => update('inorder', e.target.value)}
+              onPaste={handleBlockedPaste}
+              onDrop={handleBlockedPaste}
+              autoComplete="off"
             />
           </div>
 
@@ -222,10 +296,13 @@ export function ExerciseQuestions({
               type="text"
               className="input-mono text-sm"
               placeholder="Ej: 10, 25, 20, 60, 45, 30"
-              disabled={readOnly}
+              disabled={isReadOnly}
               value={answers.postorder}
               onFocus={() => setActiveField('postorder')}
               onChange={(e) => update('postorder', e.target.value)}
+              onPaste={handleBlockedPaste}
+              onDrop={handleBlockedPaste}
+              autoComplete="off"
             />
           </div>
         </div>
@@ -272,11 +349,24 @@ export function ExerciseQuestions({
         <button
           id="btn-evaluate-exercise"
           type="button"
-          disabled={readOnly}
+          disabled={isReadOnly}
           onClick={handleEvaluate}
-          className="btn-primary w-full py-3 text-sm font-semibold tracking-wide"
+          className={cx(
+            'btn-primary w-full py-3 text-sm font-semibold tracking-wide transition-all',
+            hasExhaustedAttempts && '!bg-surface-variant !text-text-muted !border-outline !cursor-not-allowed opacity-75'
+          )}
         >
-          <span>🚀 Guardar y Evaluar Ejercicio</span>
+          <span>
+            {hasExhaustedAttempts
+              ? `🔒 Intentos agotados (${attempts}/${max})`
+              : !settings.open
+              ? 'Actividad cerrada (solo lectura)'
+              : max === 1
+              ? '🚀 Guardar y Evaluar (Único intento)'
+              : max > 1
+              ? `🚀 Guardar y Evaluar (Intento ${attempts + 1} de ${max})`
+              : '🚀 Guardar y Evaluar Ejercicio'}
+          </span>
         </button>
       </div>
     </div>

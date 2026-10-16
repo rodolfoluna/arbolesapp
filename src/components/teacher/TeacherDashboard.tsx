@@ -171,9 +171,18 @@ export function TeacherDashboard() {
                   >
                     <div>
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="rounded-full bg-surface-variant px-3 py-1 text-[11px] font-medium text-text-secondary">
-                          Grupo: {group?.name || 'Sin grupo'}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="rounded-full bg-surface-variant px-3 py-1 text-[11px] font-medium text-text-secondary">
+                            Grupo: {group?.name || 'Sin grupo'}
+                          </span>
+                          <span className="rounded-full border border-outline bg-surface-variant/60 px-2 py-0.5 text-[10px] text-text-muted font-medium">
+                            {act.settings?.maxAttempts === 1
+                              ? '🔒 1 intento'
+                              : act.settings?.maxAttempts && act.settings.maxAttempts > 1
+                              ? `🎯 ${act.settings.maxAttempts} intentos`
+                              : '∞ Ilimitados'}
+                          </span>
+                        </div>
                         <span
                           className={cx(
                             'badge border text-[11px]',

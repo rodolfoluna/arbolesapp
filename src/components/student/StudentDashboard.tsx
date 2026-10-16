@@ -99,9 +99,16 @@ export function StudentDashboard() {
               >
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="rounded-full bg-surface-variant px-3 py-1 text-[11px] font-medium text-text-secondary">
-                      {totalEx} {totalEx === 1 ? 'ejercicio' : 'ejercicios'}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-full bg-surface-variant px-3 py-1 text-[11px] font-medium text-text-secondary">
+                        {totalEx} {totalEx === 1 ? 'ejercicio' : 'ejercicios'}
+                      </span>
+                      {act.settings?.maxAttempts !== undefined && act.settings.maxAttempts > 0 && (
+                        <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          {act.settings.maxAttempts === 1 ? '🔒 1 intento' : `🎯 ${act.settings.maxAttempts} intentos`}
+                        </span>
+                      )}
+                    </div>
                     {avgScore !== null ? (
                       <ScorePill score={avgScore} />
                     ) : (

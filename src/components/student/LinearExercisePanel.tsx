@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ActivitySettings } from '../../lib/models';
 import type { Exercise, LinearAnswers } from '../../lib/tree/types';
 import {
@@ -7,7 +8,7 @@ import {
   evaluateLinear,
   type LinearEvaluation,
 } from '../../lib/linear/linear';
-import { ScorePill } from '../ui';
+import { ScorePill, cx } from '../ui';
 
 interface Props {
   exercise: Exercise;
@@ -17,6 +18,8 @@ interface Props {
   onSaveAndEvaluate: (evaluation: LinearEvaluation) => void;
   readOnly?: boolean;
   lastEvaluation?: LinearEvaluation | null;
+  attempts?: number;
+  maxAttempts?: number;
 }
 
 /** Ejercicio de lista/pila/cola: el alumno ejecuta la secuencia y responde estado final y datos extraídos. */
@@ -28,13 +31,31 @@ export function LinearExercisePanel({
   onSaveAndEvaluate,
   readOnly = false,
   lastEvaluation,
+  attempts = 0,
+  maxAttempts,
 }: Props) {
+  const [pasteBlocked, setPasteBlocked] = useState(false);
   const cfg = exercise.linear!;
   const label = STRUCTURE_LABEL[cfg.structure];
 
+  const max = maxAttempts ?? settings.maxAttempts ?? 0;
+  const hasExhaustedAttempts = max > 0 && attempts >= max;
+  const isReadOnly = readOnly || hasExhaustedAttempts;
+
+  const handleBlockedPaste = (e: React.ClipboardEvent | React.DragEvent) => {
+    e.preventDefault();
+    setPasteBlocked(true);
+    setTimeout(() => setPasteBlocked(false), 3500);
+  };
+
   const update = (key: keyof LinearAnswers, val: string) => {
-    if (readOnly) return;
+    if (isReadOnly) return;
     onChangeAnswers({ ...answers, [key]: val });
+  };
+
+  const handleEvaluate = () => {
+    if (isReadOnly) return;
+    onSaveAndEvaluate(evaluateLinear(exercise, answers));
   };
 
   return (
@@ -88,6 +109,46 @@ export function LinearExercisePanel({
               {lastEvaluation && <ScorePill score={lastEvaluation.total} label="Calificación" />}
             </div>
 
+            {/* Banner de Estado de Intentos */}
+            {max > 0 && (
+              <div
+                className={cx(
+                  'rounded-xl border p-2.5 text-xs font-medium flex items-center justify-between gap-2',
+                  hasExhaustedAttempts
+                    ? 'border-red-500/40 bg-red-500/10 text-red-500 dark:text-red-400'
+                    : attempts > 0
+                    ? 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    : 'border-primary/40 bg-primary/10 text-primary'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">
+                    {hasExhaustedAttempts ? '🔒' : attempts > 0 ? '⚠️' : '🎯'}
+                  </span>
+                  <span>
+                    {hasExhaustedAttempts
+                      ? `Intentos agotados (${attempts}/${max}). Este ejercicio ya no se puede modificar.`
+                      : max === 1
+                      ? 'Solo tienes 1 intento. Al pulsar "Guardar y Evaluar" se registrará tu nota final sin corrección.'
+                      : attempts > 0
+                      ? `Has usado ${attempts} de ${max} intentos. Te queda ${max - attempts} intento(s) para corregir.`
+                      : `Tienes hasta ${max} intentos para evaluar y corregir tus respuestas.`}
+                  </span>
+                </div>
+                <span className="shrink-0 rounded-full bg-surface-variant/80 px-2 py-0.5 font-mono text-[11px] font-bold">
+                  {attempts}/{max}
+                </span>
+              </div>
+            )}
+
+            {/* Notificación cuando intenta pegar texto */}
+            {pasteBlocked && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/15 p-2.5 text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2 animate-fade-up">
+                <span>🚫</span>
+                <span>No está permitido pegar texto en las respuestas. Por favor escribe tu respuesta manualmente.</span>
+              </div>
+            )}
+
             <div>
               <label className="label" htmlFor="lin-final">
                 1. Estado final de la {label.toLowerCase()} ({STRUCTURE_ORDER_HINT[cfg.structure]})
@@ -97,10 +158,12 @@ export function LinearExercisePanel({
                 type="text"
                 className="input-mono text-sm"
                 placeholder="Ej: 4, 5, 9"
-                disabled={readOnly}
+                disabled={isReadOnly}
                 autoComplete="off"
                 value={answers.finalState}
                 onChange={(e) => update('finalState', e.target.value)}
+                onPaste={handleBlockedPaste}
+                onDrop={handleBlockedPaste}
               />
             </div>
 
@@ -113,10 +176,12 @@ export function LinearExercisePanel({
                 type="text"
                 className="input-mono text-sm"
                 placeholder="Ej: 1, 5, false (o '-' si ninguna devuelve un dato)"
-                disabled={readOnly}
+                disabled={isReadOnly}
                 autoComplete="off"
                 value={answers.extracted}
                 onChange={(e) => update('extracted', e.target.value)}
+                onPaste={handleBlockedPaste}
+                onDrop={handleBlockedPaste}
               />
               <p className="mt-1 text-xs text-text-muted">
                 Incluye lo que devuelven operaciones como remove, get, pop, dequeue, head, top, size, isEmpty…
@@ -146,11 +211,24 @@ export function LinearExercisePanel({
           <button
             id="btn-evaluate-exercise"
             type="button"
-            disabled={readOnly}
-            onClick={() => onSaveAndEvaluate(evaluateLinear(exercise, answers))}
-            className="btn-primary w-full py-3 text-sm font-semibold tracking-wide"
+            disabled={isReadOnly}
+            onClick={handleEvaluate}
+            className={cx(
+              'btn-primary w-full py-3 text-sm font-semibold tracking-wide transition-all',
+              hasExhaustedAttempts && '!bg-surface-variant !text-text-muted !border-outline !cursor-not-allowed opacity-75'
+            )}
           >
-            <span>🚀 Guardar y Evaluar Ejercicio</span>
+            <span>
+              {hasExhaustedAttempts
+                ? `🔒 Intentos agotados (${attempts}/${max})`
+                : !settings.open
+                ? 'Actividad cerrada (solo lectura)'
+                : max === 1
+                ? '🚀 Guardar y Evaluar (Único intento)'
+                : max > 1
+                ? `🚀 Guardar y Evaluar (Intento ${attempts + 1} de ${max})`
+                : '🚀 Guardar y Evaluar Ejercicio'}
+            </span>
           </button>
         </section>
       </div>

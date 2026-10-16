@@ -36,10 +36,15 @@ export function StudentActivityView({ activity, onBack }: Props) {
   const [lastEval, setLastEval] = useState<Evaluation | null>(null);
   const [currentLinear, setCurrentLinear] = useState<LinearAnswers>(EMPTY_LINEAR_ANSWERS);
   const [lastLinearEval, setLastLinearEval] = useState<LinearEvaluation | null>(null);
+  const [currentAttempts, setCurrentAttempts] = useState(0);
 
   const activeExercise = activity.exercises[activeExIndex] || activity.exercises[0];
   const exId = activeExercise?.id;
   const isLinear = isLinearExercise(activeExercise);
+
+  const maxAttempts = activity.settings?.maxAttempts ?? 0;
+  const hasExhaustedAttempts = maxAttempts > 0 && currentAttempts >= maxAttempts;
+  const isReadOnly = !activity.settings.open || hasExhaustedAttempts;
 
   // Clave de almacenamiento local de respaldo
   const localBackupKey = `tree_sub_${activity.id}_${profile?.controlNumber || 'anon'}_${exId}`;
@@ -63,6 +68,7 @@ export function StudentActivityView({ activity, onBack }: Props) {
       setCurrentTree(remoteData.tree || EMPTY_TREE);
       setCurrentAnswers(remoteData.answers || EMPTY_ANSWERS);
       setCurrentLinear(remoteData.linearAnswers || EMPTY_LINEAR_ANSWERS);
+      setCurrentAttempts(remoteData.attempts ?? 0);
       if (remoteData.score !== undefined && isLinearExercise(activeExercise)) {
         setLastLinearEval(evaluateLinear(activeExercise, remoteData.linearAnswers));
         setLastEval(null);
@@ -84,6 +90,7 @@ export function StudentActivityView({ activity, onBack }: Props) {
         setCurrentTree(parsed.tree || EMPTY_TREE);
         setCurrentAnswers(parsed.answers || EMPTY_ANSWERS);
         setCurrentLinear(parsed.linearAnswers || EMPTY_LINEAR_ANSWERS);
+        setCurrentAttempts(parsed.attempts ?? 0);
         setLastEval(null);
         setLastLinearEval(null);
         return;
@@ -96,6 +103,7 @@ export function StudentActivityView({ activity, onBack }: Props) {
     setCurrentTree(EMPTY_TREE);
     setCurrentAnswers(EMPTY_ANSWERS);
     setCurrentLinear(EMPTY_LINEAR_ANSWERS);
+    setCurrentAttempts(0);
     setLastEval(null);
     setLastLinearEval(null);
   }, [exId, submission, localBackupKey, activeExercise, activity.settings]);
@@ -105,13 +113,28 @@ export function StudentActivityView({ activity, onBack }: Props) {
     tree: FlatTree,
     answers: Answers,
     linearAnswers: LinearAnswers,
-    evalRes?: { total: number; structureExact: boolean }
+    evalRes?: { total: number; structureExact: boolean },
+    overrideAttempts?: number
   ) => {
+    const prevSub = submission?.exercisesData?.[exId];
+    const resolvedAttempts =
+      overrideAttempts !== undefined
+        ? overrideAttempts
+        : (prevSub?.attempts ?? currentAttempts ?? 0) + (evalRes ? 1 : 0);
+
     // 1. LocalStorage inmediato
     try {
       localStorage.setItem(
         localBackupKey,
-        JSON.stringify({ tree, answers, linearAnswers, updatedAt: Date.now() })
+        JSON.stringify({
+          tree,
+          answers,
+          linearAnswers,
+          attempts: resolvedAttempts,
+          submitted: !!evalRes || (prevSub?.submitted ?? false),
+          score: evalRes ? evalRes.total : prevSub?.score,
+          updatedAt: Date.now(),
+        })
       );
     } catch {
       /* ignore */
@@ -119,13 +142,12 @@ export function StudentActivityView({ activity, onBack }: Props) {
 
     // 2. Firestore (encola automáticamente si está offline)
     if (profile?.controlNumber && profile?.uid) {
-      const prevSub = submission?.exercisesData?.[exId];
       const payload: ExerciseSubmission = {
         tree,
         answers,
         updatedAt: Date.now(),
         submitted: !!evalRes || (prevSub?.submitted ?? false),
-        attempts: (prevSub?.attempts || 0) + (evalRes ? 1 : 0),
+        attempts: resolvedAttempts,
       };
       if (isLinear) payload.linearAnswers = linearAnswers;
       if (evalRes) {
@@ -147,28 +169,37 @@ export function StudentActivityView({ activity, onBack }: Props) {
   };
 
   const handleTreeChange = (newTree: FlatTree) => {
+    if (isReadOnly) return;
     setCurrentTree(newTree);
     persistChanges(newTree, currentAnswers, currentLinear);
   };
 
   const handleAnswersChange = (newAnswers: Answers) => {
+    if (isReadOnly) return;
     setCurrentAnswers(newAnswers);
     persistChanges(currentTree, newAnswers, currentLinear);
   };
 
   const handleLinearChange = (newAnswers: LinearAnswers) => {
+    if (isReadOnly) return;
     setCurrentLinear(newAnswers);
     persistChanges(currentTree, currentAnswers, newAnswers);
   };
 
   const handleSaveAndEvaluate = (evalResult: Evaluation) => {
+    if (isReadOnly) return;
+    const nextAttempts = currentAttempts + 1;
+    setCurrentAttempts(nextAttempts);
     setLastEval(evalResult);
-    persistChanges(currentTree, currentAnswers, currentLinear, evalResult);
+    persistChanges(currentTree, currentAnswers, currentLinear, evalResult, nextAttempts);
   };
 
   const handleSaveAndEvaluateLinear = (evalResult: LinearEvaluation) => {
+    if (isReadOnly) return;
+    const nextAttempts = currentAttempts + 1;
+    setCurrentAttempts(nextAttempts);
     setLastLinearEval(evalResult);
-    persistChanges(currentTree, currentAnswers, currentLinear, evalResult);
+    persistChanges(currentTree, currentAnswers, currentLinear, evalResult, nextAttempts);
   };
 
   // Nodos usados en el árbol para tachar chips
@@ -200,9 +231,16 @@ export function StudentActivityView({ activity, onBack }: Props) {
               </button>
             )}
             <div>
-              <h2 className="text-base font-semibold text-text-primary sm:text-lg">
-                {activity.title}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-semibold text-text-primary sm:text-lg">
+                  {activity.title}
+                </h2>
+                {maxAttempts > 0 && (
+                  <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                    {maxAttempts === 1 ? '🔒 1 intento' : `🎯 Máx ${maxAttempts} intentos`}
+                  </span>
+                )}
+              </div>
               <div className="text-xs text-text-muted">
                 {isLinear ? (
                   <>
@@ -257,6 +295,8 @@ export function StudentActivityView({ activity, onBack }: Props) {
             const exData = submission?.exercisesData?.[ex.id];
             const isCompleted = exData?.submitted;
             const score = exData?.score;
+            const exAttempts = exData?.attempts ?? 0;
+            const isExhausted = maxAttempts > 0 && exAttempts >= maxAttempts;
 
             return (
               <button
@@ -275,9 +315,17 @@ export function StudentActivityView({ activity, onBack }: Props) {
                 {isCompleted && (
                   <span
                     className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold"
-                    title="Ejercicio evaluado"
+                    title={`Ejercicio evaluado (${exAttempts} intento${exAttempts === 1 ? '' : 's'})`}
                   >
                     ✓
+                  </span>
+                )}
+                {isExhausted && (
+                  <span
+                    className="text-[11px]"
+                    title={`Intentos agotados (${exAttempts}/${maxAttempts})`}
+                  >
+                    🔒
                   </span>
                 )}
                 {score !== undefined && (
@@ -325,8 +373,10 @@ export function StudentActivityView({ activity, onBack }: Props) {
             answers={currentLinear}
             onChangeAnswers={handleLinearChange}
             onSaveAndEvaluate={handleSaveAndEvaluateLinear}
-            readOnly={!activity.settings.open}
+            readOnly={isReadOnly}
             lastEvaluation={lastLinearEval}
+            attempts={currentAttempts}
+            maxAttempts={maxAttempts}
           />
         </div>
       ) : (
@@ -341,7 +391,7 @@ export function StudentActivityView({ activity, onBack }: Props) {
         >
           <TreeCanvas
             tree={currentTree}
-            editable={!activity.settings.open ? false : true}
+            editable={!isReadOnly}
             onChange={handleTreeChange}
             dataType={activeExercise.dataType}
             dataset={activeExercise.dataset}
@@ -364,8 +414,10 @@ export function StudentActivityView({ activity, onBack }: Props) {
             answers={currentAnswers}
             onChangeAnswers={handleAnswersChange}
             onSaveAndEvaluate={handleSaveAndEvaluate}
-            readOnly={!activity.settings.open}
+            readOnly={isReadOnly}
             lastEvaluation={lastEval}
+            attempts={currentAttempts}
+            maxAttempts={maxAttempts}
           />
         </div>
       </div>

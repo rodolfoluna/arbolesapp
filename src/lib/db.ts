@@ -469,11 +469,17 @@ export function resetExerciseSubmission(activityId: string, controlNumber: strin
     );
     if (sub && sub.exercisesData[exerciseId]) {
       sub.exercisesData[exerciseId].submitted = false;
+      sub.exercisesData[exerciseId].attempts = 0;
       notifyDbChange();
     }
     return Promise.resolve();
   }
 
   const ref = doc(getDb(), 'submissions', submissionId(activityId, controlNumber));
-  return trackWrite(updateDoc(ref, { [`exercisesData.${exerciseId}.submitted`]: false }));
+  return trackWrite(
+    updateDoc(ref, {
+      [`exercisesData.${exerciseId}.submitted`]: false,
+      [`exercisesData.${exerciseId}.attempts`]: 0,
+    })
+  );
 }
