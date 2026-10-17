@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Activity, Group, Submission, UserProfile } from '../../lib/models';
 import type { Exercise } from '../../lib/tree/types';
-import { subscribeSubmissionsByActivity, resetExerciseSubmission } from '../../lib/db';
+import { fetchSubmissionsByActivity, resetExerciseSubmission } from '../../lib/db';
 import { evaluateExercise } from '../../lib/tree/evaluate';
 import {
   STRUCTURE_LABEL,
@@ -42,16 +42,24 @@ interface DetailModalState {
 
 export function ProgressMatrix({ activity, group, students }: Props) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<DetailModalState | null>(null);
 
-  // Escuchar entregas de la actividad en tiempo real
+  // Una consulta al abrir o actualizar; sin lecturas por cada cambio de los alumnos.
   useEffect(() => {
     if (!activity.id) return;
-    const unsub = subscribeSubmissionsByActivity(activity.id, (subs) => {
-      setSubmissions(subs);
-    });
-    return () => unsub();
-  }, [activity.id]);
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    setSubmissions([]);
+    fetchSubmissionsByActivity(activity.id)
+      .then((subs) => { if (!cancelled) setSubmissions(subs); })
+      .catch(() => { if (!cancelled) setLoadError('No se pudieron cargar las entregas. Intenta actualizar de nuevo.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [activity.id, refreshVersion]);
 
   const studentsInGroup = useMemo(() => {
     return students.filter((s) => s.groupIds?.includes(activity.groupId));
@@ -113,16 +121,25 @@ export function ProgressMatrix({ activity, group, students }: Props) {
           </p>
         </div>
 
+        <button className="btn-secondary btn-sm" disabled={loading}
+          onClick={() => setRefreshVersion((v) => v + 1)}>
+          {loading ? 'Cargando…' : 'Actualizar avances'}
+        </button>
         <button
           onClick={handleExportCsv}
+          disabled={loading || !!loadError}
           className="btn-secondary btn-sm text-xs font-semibold"
         >
           📥 Exportar Calificaciones (CSV)
         </button>
       </div>
 
+      <p className="text-xs text-text-muted" role="status">
+        {loadError || 'Las entregas se consultan al abrir esta matriz. Pulsa Actualizar avances para ver cambios nuevos.'}
+      </p>
+
       {/* Tabla de Matriz */}
-      <div className="card overflow-hidden !p-0 border-outline bg-surface-container">
+      {!loading && !loadError && <div className="card overflow-hidden !p-0 border-outline bg-surface-container">
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
@@ -208,8 +225,7 @@ export function ProgressMatrix({ activity, group, students }: Props) {
             </tbody>
           </table>
         </div>
-      </div>
-
+      </div>}
       {/* Modal Lado a Lado: Árbol del Alumno vs Árbol Esperado */}
       {detailModal && (
         <Modal
@@ -240,6 +256,7 @@ export function ProgressMatrix({ activity, group, students }: Props) {
                       detailModal.exercise.id
                     );
                     setDetailModal(null);
+                    setRefreshVersion((v) => v + 1);
                   }
                 }}
                 className="btn-danger btn-sm text-xs"

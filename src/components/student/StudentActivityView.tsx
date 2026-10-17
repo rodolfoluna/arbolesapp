@@ -5,7 +5,8 @@ import { EMPTY_ANSWERS, EMPTY_LINEAR_ANSWERS, EMPTY_TREE, TREE_TYPE_HINT, TREE_T
 import { treeValues } from '../../lib/tree/edit';
 import { valueKey } from '../../lib/tree/values';
 import { evaluateExercise, type Evaluation } from '../../lib/tree/evaluate';
-import { saveExerciseSubmission, subscribeSubmission } from '../../lib/db';
+import { saveExerciseSubmission } from '../../lib/db';
+import { latestExercise, persistExerciseDraft } from '../../lib/drafts';
 import { useAuth } from '../../lib/auth';
 import { TreeCanvas } from '../tree/TreeCanvas';
 import { ExerciseQuestions } from './ExerciseQuestions';
@@ -21,14 +22,15 @@ import { cx, ScorePill } from '../ui';
 
 interface Props {
   activity: Activity;
+  submission: Submission | null;
   onBack?: () => void;
 }
 
-export function StudentActivityView({ activity, onBack }: Props) {
+export function StudentActivityView({ activity, submission, onBack }: Props) {
   const { profile } = useAuth();
   const [activeExIndex, setActiveExIndex] = useState(0);
   const [mobileTab, setMobileTab] = useState<'tree' | 'questions'>('tree');
-  const [submission, setSubmission] = useState<Submission | null>(null);
+  const [draftError, setDraftError] = useState(false);
 
   // Estados locales del ejercicio actual para interactividad inmediata y offline
   const [currentTree, setCurrentTree] = useState<FlatTree>(EMPTY_TREE);
@@ -49,21 +51,17 @@ export function StudentActivityView({ activity, onBack }: Props) {
   // Clave de almacenamiento local de respaldo
   const localBackupKey = `tree_sub_${activity.id}_${profile?.controlNumber || 'anon'}_${exId}`;
 
-  // Suscribirse a la entrega en Firestore (funciona desde caché sin conexión)
-  useEffect(() => {
-    if (!profile?.controlNumber || !activity.id) return;
-    const unsub = subscribeSubmission(activity.id, profile.controlNumber, (sub) => {
-      setSubmission(sub);
-    });
-    return () => unsub();
-  }, [activity.id, profile?.controlNumber]);
-
   // Cargar estado del ejercicio activo desde Firestore o LocalStorage
   useEffect(() => {
     if (!exId) return;
 
     // 1. Intentar desde Firestore (o caché de Firestore)
-    const remoteData = submission?.exercisesData?.[exId];
+    let localData: ExerciseSubmission | undefined;
+    try {
+      const raw = localStorage.getItem(localBackupKey);
+      if (raw) localData = JSON.parse(raw);
+    } catch { /* Un respaldo ilegible no impide recuperar la entrega remota. */ }
+    const remoteData = latestExercise(submission?.exercisesData?.[exId], localData);
     if (remoteData) {
       setCurrentTree(remoteData.tree || EMPTY_TREE);
       setCurrentAnswers(remoteData.answers || EMPTY_ANSWERS);
@@ -82,23 +80,6 @@ export function StudentActivityView({ activity, onBack }: Props) {
       return;
     }
 
-    // 2. Si no hay en Firestore, revisar respaldo en LocalStorage
-    try {
-      const raw = localStorage.getItem(localBackupKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setCurrentTree(parsed.tree || EMPTY_TREE);
-        setCurrentAnswers(parsed.answers || EMPTY_ANSWERS);
-        setCurrentLinear(parsed.linearAnswers || EMPTY_LINEAR_ANSWERS);
-        setCurrentAttempts(parsed.attempts ?? 0);
-        setLastEval(null);
-        setLastLinearEval(null);
-        return;
-      }
-    } catch {
-      /* ignore */
-    }
-
     // 3. Si es nuevo, inicializar vacío
     setCurrentTree(EMPTY_TREE);
     setCurrentAnswers(EMPTY_ANSWERS);
@@ -114,58 +95,46 @@ export function StudentActivityView({ activity, onBack }: Props) {
     answers: Answers,
     linearAnswers: LinearAnswers,
     evalRes?: { total: number; structureExact: boolean },
-    overrideAttempts?: number
+    overrideAttempts?: number,
+    saveToCloud = false,
   ) => {
-    const prevSub = submission?.exercisesData?.[exId];
+    let localData: ExerciseSubmission | undefined;
+    try {
+      const raw = localStorage.getItem(localBackupKey);
+      if (raw) localData = JSON.parse(raw);
+    } catch { /* Continuar con el estado en memoria si el almacenamiento falla. */ }
+    const prevSub = latestExercise(submission?.exercisesData?.[exId], localData);
     const resolvedAttempts =
       overrideAttempts !== undefined
         ? overrideAttempts
-        : (prevSub?.attempts ?? currentAttempts ?? 0) + (evalRes ? 1 : 0);
+        : currentAttempts + (evalRes ? 1 : 0);
 
-    // 1. LocalStorage inmediato
-    try {
-      localStorage.setItem(
-        localBackupKey,
-        JSON.stringify({
-          tree,
-          answers,
-          linearAnswers,
-          attempts: resolvedAttempts,
-          submitted: !!evalRes || (prevSub?.submitted ?? false),
-          score: evalRes ? evalRes.total : prevSub?.score,
-          updatedAt: Date.now(),
-        })
-      );
-    } catch {
-      /* ignore */
-    }
-
-    // 2. Firestore (encola automáticamente si está offline)
-    if (profile?.controlNumber && profile?.uid) {
-      const payload: ExerciseSubmission = {
-        tree,
-        answers,
-        updatedAt: Date.now(),
-        submitted: !!evalRes || (prevSub?.submitted ?? false),
-        attempts: resolvedAttempts,
-      };
-      if (isLinear) payload.linearAnswers = linearAnswers;
-      if (evalRes) {
-        payload.submittedAt = Date.now();
-        payload.score = evalRes.total;
-        payload.structureExact = evalRes.structureExact;
-      } else if (prevSub?.submitted) {
-        if (prevSub.submittedAt !== undefined) payload.submittedAt = prevSub.submittedAt;
-        if (prevSub.score !== undefined) payload.score = prevSub.score;
-        if (prevSub.structureExact !== undefined) payload.structureExact = prevSub.structureExact;
-      }
-      saveExerciseSubmission(
-        { uid: profile.uid, controlNumber: profile.controlNumber, fullName: profile.fullName },
-        activity.id,
-        exId,
-        payload
-      );
-    }
+    const now = Date.now();
+    const payload: ExerciseSubmission = {
+      ...prevSub,
+      tree,
+      answers,
+      ...(isLinear ? { linearAnswers } : {}),
+      updatedAt: now,
+      submitted: !!evalRes || (prevSub?.submitted ?? false),
+      attempts: resolvedAttempts,
+      ...(evalRes ? {
+        submittedAt: now,
+        score: evalRes.total,
+        structureExact: evalRes.structureExact,
+      } : {}),
+    };
+    const stored = persistExerciseDraft(
+      localBackupKey,
+      payload,
+      evalRes ? 'evaluate' : saveToCloud ? 'save' : 'edit',
+      (data) => {
+        if (profile?.controlNumber && profile?.uid) {
+          saveExerciseSubmission(profile, activity.id, exId, data);
+        }
+      },
+    );
+    setDraftError(!stored);
   };
 
   const handleTreeChange = (newTree: FlatTree) => {
@@ -289,6 +258,17 @@ export function StudentActivityView({ activity, onBack }: Props) {
         </div>
 
         {/* Barra de pestañas horizontal deslizante: Ejercicio 1 | Ejercicio 2 | ... */}
+        <div className="flex flex-wrap items-center gap-3 py-2 text-xs text-text-muted">
+          <span role="status">
+            {draftError
+              ? 'No se pudo guardar el borrador en este dispositivo. Guarda en la nube antes de salir.'
+              : 'Borrador guardado en este dispositivo. Para enviarlo al profesor, evalúa o guarda en la nube.'}
+          </span>
+          <button className="btn-secondary btn-sm" disabled={!activity.settings.open}
+            onClick={() => persistChanges(currentTree, currentAnswers, currentLinear, undefined, currentAttempts, true)}>
+            Guardar en la nube
+          </button>
+        </div>
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {activity.exercises.map((ex, idx) => {
             const isSelected = idx === activeExIndex;

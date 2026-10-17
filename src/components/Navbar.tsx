@@ -11,7 +11,7 @@ interface NavbarProps {
 
 export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
   const { user, profile, isTeacher, logout } = useAuth();
-  const { pending } = useWriteQueue();
+  const { pending, lastError } = useWriteQueue();
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
@@ -30,7 +30,7 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
   // Estado de sincronización según requerimiento:
   // 🟢 Sincronizado en la nube: online y sin escrituras pendientes
   // 🟡 Modo sin conexión (Guardado en el dispositivo): offline o con escrituras pendientes
-  const isFullySynced = isOnline && pending === 0;
+  const isFullySynced = isOnline && pending === 0 && !lastError;
 
   return (
     <header className="sticky top-0 z-40 border-b border-outline bg-surface/85 backdrop-blur-xl transition-colors duration-200">
@@ -60,9 +60,11 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
             )}
             title={
               isFullySynced
-                ? 'Todas tus respuestas y ejercicios están sincronizados con la nube.'
+                ? 'Conectado. Los borradores se guardan en este dispositivo; evalúa o pulsa Guardar en la nube para enviarlos.'
+                : lastError
+                ? `No se pudo guardar en la nube: ${lastError}. Vuelve a guardar.`
                 : !isOnline
-                ? 'Sin conexión a internet. Los cambios se guardan localmente y se subirán al reconectar.'
+                ? 'Sin conexión. Los envíos solicitados se subirán al reconectar; los borradores permanecen en este dispositivo.'
                 : `Sincronizando ${pending} cambio(s) con la nube...`
             }
           >
@@ -76,7 +78,9 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
             />
             <span className="hidden sm:inline">
               {isFullySynced
-                ? '🟢 Sincronizado en la nube'
+                ? '🟢 Conectado'
+                : lastError
+                ? '🔴 Error al guardar'
                 : !isOnline
                 ? '🟡 Modo sin conexión'
                 : `🟡 Subiendo (${pending})...`}

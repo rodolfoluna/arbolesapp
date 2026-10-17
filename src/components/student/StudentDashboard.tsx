@@ -42,7 +42,9 @@ export function StudentDashboard() {
   if (selectedActivity) {
     return (
       <StudentActivityView
-        activity={selectedActivity}
+        key={selectedActivity.id}
+        activity={activities.find((a) => a.id === selectedActivity.id) || selectedActivity}
+        submission={submissions.find((s) => s.activityId === selectedActivity.id) || null}
         onBack={() => setSelectedActivity(null)}
       />
     );

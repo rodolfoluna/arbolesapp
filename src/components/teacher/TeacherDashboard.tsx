@@ -286,6 +286,7 @@ export function TeacherDashboard() {
 
           {selectedMatrixActivity ? (
             <ProgressMatrix
+              key={selectedMatrixActivity.id}
               activity={selectedMatrixActivity}
               group={selectedMatrixGroup}
               students={students}
@@ -295,7 +296,7 @@ export function TeacherDashboard() {
               icon="📊"
               title="No hay actividades para monitorear"
             >
-              Crea una actividad primero para visualizar las calificaciones y avances en tiempo real.
+              Crea una actividad primero para consultar las calificaciones y avances.
             </EmptyState>
           )}
         </div>

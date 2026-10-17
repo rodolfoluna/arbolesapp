@@ -45,7 +45,6 @@ function loadLs<T>(key: string, fallback: T): T {
 function saveLs<T>(key: string, val: T) {
   try {
     localStorage.setItem(key, JSON.stringify(val));
-    window.dispatchEvent(new Event('arboles_db_change'));
   } catch {
     /* ignore */
   }
@@ -70,6 +69,9 @@ function notifyDbChange() {
   saveLs(LS_ACTIVITIES, localActivities);
   saveLs(LS_SUBMISSIONS, localSubmissions);
   saveLs(LS_CREDENTIALS, localCredentials);
+  // Publicar un solo cambio, después de guardar todas las colecciones. Un aviso
+  // intermedio haría que los suscriptores recargaran y borraran cambios pendientes.
+  window.dispatchEvent(new Event('arboles_db_change'));
 }
 
 /* ----------------------------- Lecturas ---------------------------- */
@@ -196,6 +198,15 @@ export function subscribeSubmissionsByActivity(
     (s) => cb(s.docs.map((d) => ({ ...(d.data() as Omit<Submission, 'id'>), id: d.id })), s.metadata),
     onError,
   );
+}
+
+/** Consulta bajo demanda: la matriz no descarga cada edición de todos los alumnos. */
+export async function fetchSubmissionsByActivity(activityId: string): Promise<Submission[]> {
+  if (!isFirebaseConfigured) {
+    return loadLs<Submission[]>(LS_SUBMISSIONS, []).filter((s) => s.activityId === activityId);
+  }
+  const snapshot = await getDocs(query(collection(getDb(), 'submissions'), where('activityId', '==', activityId)));
+  return snapshot.docs.map((d) => ({ ...(d.data() as Omit<Submission, 'id'>), id: d.id }));
 }
 
 export function subscribeMySubmissions(
@@ -470,6 +481,7 @@ export function resetExerciseSubmission(activityId: string, controlNumber: strin
     if (sub && sub.exercisesData[exerciseId]) {
       sub.exercisesData[exerciseId].submitted = false;
       sub.exercisesData[exerciseId].attempts = 0;
+      sub.exercisesData[exerciseId].updatedAt = Date.now();
       notifyDbChange();
     }
     return Promise.resolve();
@@ -480,6 +492,7 @@ export function resetExerciseSubmission(activityId: string, controlNumber: strin
     updateDoc(ref, {
       [`exercisesData.${exerciseId}.submitted`]: false,
       [`exercisesData.${exerciseId}.attempts`]: 0,
+      [`exercisesData.${exerciseId}.updatedAt`]: Date.now(),
     })
   );
 }

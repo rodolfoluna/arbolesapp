@@ -2,7 +2,7 @@
 
 Aplicación Web Progresiva (**PWA**) instalable en celulares, laptops y computadoras para la enseñanza, construcción interactiva y evaluación automática de **Árboles** (Binario por niveles, BST y AVL) y **Estructuras Lineales** (Listas, Pilas y Colas con simulación secuencial de operaciones).
 
-Diseñada para funcionar **100% sin conexión a internet** (offline-first) y sincronizarse automáticamente con **Google Firebase** cuando el dispositivo detecta conexión WiFi o por cable, alojada gratis en **GitHub Pages**.
+Diseñada para funcionar **100% sin conexión a internet** (offline-first) y guardar borradores en el dispositivo. Las respuestas se envían a **Google Firebase** al evaluar o pulsar **Guardar en la nube**; si no hay conexión, esos envíos quedan en la cola persistente de Firestore, alojada gratis en **GitHub Pages**.
 
 ---
 
@@ -55,15 +55,15 @@ Diseñada para funcionar **100% sin conexión a internet** (offline-first) y sin
    - **Primer Inicio Obligatorio:** Si `mustChangePassword == true`, la app bloquea el acceso hasta que el alumno defina su propia contraseña.
    - **Restablecimiento de Contraseña:** Genera una nueva credencial temporal sin perder las entregas previas del alumno.
 
-6. **Panel del Docente y Matriz de Avances en Tiempo Real:**
-   - Monitoreo en vivo de avances y promedios por actividad.
+6. **Panel del Docente y Matriz de Avances bajo demanda:**
+   - Consulta de avances y promedios al abrir la matriz o pulsar **Actualizar avances**. No se mantienen escuchas de entregas de todos los alumnos.
    - Clic en cualquier celda para ver el desglose rubro por rubro tanto en ejercicios de árboles como de estructuras lineales.
    - Exportación de calificaciones a archivo CSV / Excel.
 
 7. **Offline-First:**
    - Caché persistente multi-pestaña en **IndexedDB** (`persistentLocalCache` + `persistentMultipleTabManager`).
    - Service Worker con precaché de todas las fuentes, íconos y bundle compilado vía **Vite PWA**.
-   - Indicador visual: 🟢 Sincronizado en la nube / 🟡 Modo sin conexión (Guardado en dispositivo).
+   - Indicador de conexión, envíos pendientes y errores. Los borradores permanecen en este navegador hasta evaluar o pulsar **Guardar en la nube**; antes de cambiar de dispositivo, realiza uno de esos envíos y espera a que termine.
 
 ---
 
@@ -130,4 +130,30 @@ Diseñada para funcionar **100% sin conexión a internet** (offline-first) y sin
 1. Sube tu código a un repositorio en GitHub en la rama `main`.
 2. En tu repositorio de GitHub, ve a **Settings > Secrets and variables > Actions** y agrega los mismos valores de tu `.env.local` como secrets del repositorio.
 3. En **Settings > Pages**, en *Build and deployment > Source*, selecciona **GitHub Actions**.
-4. Cada `git push origin main` compilará y publicará la PWA automáticamente con HTTPS gracias al flujo configurado en [.github/workflows/deploy.yml](file:///c:/ws/arboles/.github/workflows/deploy.yml).
+4. Con el flujo habilitado y la variable de repositorio `PAGES_ENABLED=true`, cada `git push origin main` compilará y publicará la PWA automáticamente con HTTPS gracias al flujo configurado en [.github/workflows/deploy.yml](file:///c:/ws/arboles/.github/workflows/deploy.yml).
+
+
+## Ahorro de operaciones en Firebase
+
+- Editar respuestas o construir árboles guarda solo en `localStorage`: **cero escrituras de Firestore por edición**. Evaluar o guardar en la nube escribe una vez por ejercicio y acción. Ejemplo: 100 ediciones y una evaluación pasan de 101 escrituras a 1; es una comparación del código, no una medición del consumo real del proyecto.
+- El alumno comparte una sola suscripción de entregas entre su lista de actividades y el ejercicio abierto. Las modificaciones recientes del borrador tienen prioridad sobre una respuesta antigua de la nube.
+- La matriz obtiene las entregas de una actividad solo al abrirla o actualizarla. Cada consulta todavía lee los documentos que devuelve; conviene actualizar cuando se necesite revisar entregas.
+- Las actividades, grupos y perfiles mantienen sus actualizaciones para conservar los cierres de actividades, asignaciones y bajas. La caché de Firestore no elimina por sí sola los cobros de escuchas remotas.
+- Los borradores locales no se transfieren entre dispositivos ni se recuperan al borrar los datos del navegador. El profesor ve lo enviado mediante guardar o evaluar. Los envíos solicitados sin conexión se sincronizan al volver internet.
+
+Referencia: [facturación de escuchas de Firestore](https://firebase.google.com/docs/firestore/pricing#listening_to_query_results).
+
+## Estado de publicación (17 de octubre de 2026)
+
+GitHub Pages se retiró temporalmente el 16 de octubre y se reactiva el 17 de octubre de 2026 por solicitud del profesor, con la versión de ahorro de escrituras ya verificada. El flujo `deploy.yml` se habilita y la variable `PAGES_ENABLED` pasa a `true`. Las PWA ya instaladas o páginas abiertas pueden seguir funcionando y conectándose a Firebase incluso durante una pausa: retirar Pages no bloquea esas copias.
+
+Para reactivar después de una futura pausa, cuando el profesor lo solicite, primero subir el código verificado a `main` y después ejecutar:
+
+```powershell
+gh api --method POST repos/rodolfoluna/arbolesapp/pages -f build_type=workflow
+gh variable set PAGES_ENABLED --body true --repo rodolfoluna/arbolesapp
+gh workflow enable deploy.yml --repo rodolfoluna/arbolesapp
+gh workflow run deploy.yml --ref main --repo rodolfoluna/arbolesapp
+```
+
+Verificar que el despliegue terminó correctamente y que la URL vuelve a responder. No es necesario recrear Firebase ni borrar datos para reanudar.

@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   build:
+    # No publicar durante mantenimiento, incluso si se vuelve a habilitar el flujo.
+    if: vars.PAGES_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
