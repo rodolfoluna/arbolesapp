@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Group, UserProfile } from '../../lib/models';
 import {
   createGroup,
-  subscribeGroups,
+  deleteGroup,
   subscribeStudents,
   updateStudentName,
   removeStudent,
@@ -18,10 +18,9 @@ import {
 import { normalizeControlNumber } from '../../lib/firebase';
 import { ConfirmDialog, Modal, PageHeader, Spinner, cx } from '../ui';
 
-export function GroupManager() {
-  const [groups, setGroups] = useState<Group[]>([]);
+export function GroupManager({ groups }: { groups: Group[] }) {
   const [students, setStudents] = useState<UserProfile[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(() => groups[0]?.id || '');
 
   // Modales
   const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
@@ -50,19 +49,15 @@ export function GroupManager() {
   const [editingStudent, setEditingStudent] = useState<UserProfile | null>(null);
   const [editName, setEditName] = useState('');
   const [deletingStudent, setDeletingStudent] = useState<UserProfile | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
+  const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+  const [deleteGroupError, setDeleteGroupError] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const unsubG = subscribeGroups((g) => {
-      setGroups(g);
-      if (g.length > 0 && !selectedGroupId) {
-        setSelectedGroupId(g[0].id);
-      }
-    });
     const unsubS = subscribeStudents((s) => setStudents(s));
     return () => {
-      unsubG();
       unsubS();
     };
   }, []);
@@ -82,6 +77,21 @@ export function GroupManager() {
       setIsNewGroupOpen(false);
     } catch (err) {
       alert('Error al crear grupo: ' + err);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!deletingGroup || isDeletingGroup) return;
+    setIsDeletingGroup(true);
+    setDeleteGroupError('');
+    try {
+      await deleteGroup(deletingGroup.id);
+      setSelectedGroupId((current) => current === deletingGroup.id ? '' : current);
+      setDeletingGroup(null);
+    } catch (error) {
+      setDeleteGroupError(error instanceof Error ? error.message : 'No se pudo eliminar el grupo. Intenta de nuevo.');
+    } finally {
+      setIsDeletingGroup(false);
     }
   };
 
@@ -285,6 +295,17 @@ export function GroupManager() {
         })}
       </div>
 
+      {activeGroup && (
+        <div className="flex justify-end">
+          <button
+            className="btn-danger btn-sm"
+            onClick={() => { setDeletingGroup(activeGroup); setDeleteGroupError(''); }}
+          >
+            Eliminar grupo
+          </button>
+        </div>
+      )}
+
       {/* Tabla de Alumnos */}
       <div className="card overflow-hidden !p-0 border-outline bg-surface-container">
         <div className="flex items-center justify-between border-b border-outline px-5 py-3.5">
@@ -408,6 +429,28 @@ export function GroupManager() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={!!deletingGroup}
+        onClose={() => { if (!isDeletingGroup) setDeletingGroup(null); }}
+        title="Eliminar grupo"
+        size="sm"
+        footer={
+          <>
+            <button className="btn-ghost" disabled={isDeletingGroup} onClick={() => setDeletingGroup(null)}>Cancelar</button>
+            <button className="btn-danger" disabled={isDeletingGroup} onClick={handleDeleteGroup}>
+              {isDeletingGroup ? 'Eliminando…' : 'Confirmar eliminación'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3 text-sm">
+          <p>¿Eliminar el grupo <b>{deletingGroup?.name}</b>? Esta acción no se puede deshacer.</p>
+          <p>Se conservarán las cuentas, contraseñas y entregas de los alumnos, así como sus otros grupos. Los alumnos que solo pertenecían a este grupo quedarán sin grupo asignado.</p>
+          <p>Si tiene actividades asignadas, primero debes moverlas a otro grupo o eliminarlas.</p>
+          {deleteGroupError && <p role="alert" className="text-coral-400">{deleteGroupError}</p>}
+        </div>
+      </Modal>
 
       {/* Modal Nuevo Grupo */}
       <Modal

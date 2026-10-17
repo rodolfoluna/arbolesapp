@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Activity, Group, Submission, UserProfile } from '../../lib/models';
 import type { Exercise } from '../../lib/tree/types';
-import { fetchSubmissionsByActivity, resetExerciseSubmission } from '../../lib/db';
+import { fetchSubmissionsByActivity, resetExerciseSubmission, subscribeStudentsInGroup } from '../../lib/db';
 import { evaluateExercise } from '../../lib/tree/evaluate';
 import {
   STRUCTURE_LABEL,
@@ -19,7 +19,6 @@ import { Modal, ScorePill, cx } from '../ui';
 interface Props {
   activity: Activity;
   group?: Group;
-  students: UserProfile[];
 }
 
 /** Rubro revisado (común a ejercicios de árbol y de estructura lineal). */
@@ -40,12 +39,33 @@ interface DetailModalState {
   evalResult: { total: number; structureExact: boolean; items: ReviewItem[] };
 }
 
-export function ProgressMatrix({ activity, group, students }: Props) {
+export function ProgressMatrix({ activity, group }: Props) {
+  const [students, setStudents] = useState<UserProfile[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [rosterError, setRosterError] = useState<string | null>(null);
+  const [rosterVersion, setRosterVersion] = useState(0);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<DetailModalState | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setStudents([]);
+    setRosterLoading(true);
+    setRosterError(null);
+    const stop = subscribeStudentsInGroup(activity.groupId, (items) => {
+      if (!active) return;
+      setStudents(items);
+      setRosterLoading(false);
+    }, () => {
+      if (!active) return;
+      setRosterError('No se pudo cargar el alumnado del grupo. Pulsa Actualizar avances para reintentar.');
+      setRosterLoading(false);
+    });
+    return () => { active = false; stop(); };
+  }, [activity.groupId, rosterVersion]);
 
   // Una consulta al abrir o actualizar; sin lecturas por cada cambio de los alumnos.
   useEffect(() => {
@@ -117,17 +137,20 @@ export function ProgressMatrix({ activity, group, students }: Props) {
           </h3>
           <p className="text-xs text-text-muted">
             Grupo: <b className="text-text-primary">{group?.name || 'General'}</b> · Alumnos:{' '}
-            {studentsInGroup.length}
+            {rosterLoading ? '…' : studentsInGroup.length}
           </p>
         </div>
 
-        <button className="btn-secondary btn-sm" disabled={loading}
-          onClick={() => setRefreshVersion((v) => v + 1)}>
-          {loading ? 'Cargando…' : 'Actualizar avances'}
+        <button className="btn-secondary btn-sm" disabled={loading || rosterLoading}
+          onClick={() => {
+            setRefreshVersion((v) => v + 1);
+            if (rosterError) setRosterVersion((v) => v + 1);
+          }}>
+          {loading || rosterLoading ? 'Cargando…' : 'Actualizar avances'}
         </button>
         <button
           onClick={handleExportCsv}
-          disabled={loading || !!loadError}
+          disabled={loading || rosterLoading || !!loadError || !!rosterError}
           className="btn-secondary btn-sm text-xs font-semibold"
         >
           📥 Exportar Calificaciones (CSV)
@@ -135,11 +158,11 @@ export function ProgressMatrix({ activity, group, students }: Props) {
       </div>
 
       <p className="text-xs text-text-muted" role="status">
-        {loadError || 'Las entregas se consultan al abrir esta matriz. Pulsa Actualizar avances para ver cambios nuevos.'}
+        {loadError || rosterError || (rosterLoading ? 'Cargando alumnado del grupo…' : 'Las entregas se consultan al abrir esta matriz. Pulsa Actualizar avances para ver cambios nuevos.')}
       </p>
 
       {/* Tabla de Matriz */}
-      {!loading && !loadError && <div className="card overflow-hidden !p-0 border-outline bg-surface-container">
+      {!loading && !rosterLoading && !loadError && !rosterError && <div className="card overflow-hidden !p-0 border-outline bg-surface-container">
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>

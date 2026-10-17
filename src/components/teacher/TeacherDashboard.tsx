@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { Activity, Group, UserProfile } from '../../lib/models';
+import type { Activity, Group } from '../../lib/models';
 import {
   deleteActivity,
   setActivityOpen,
   subscribeActivities,
   subscribeGroups,
-  subscribeStudents,
 } from '../../lib/db';
 import { GroupManager } from './GroupManager';
 import { ActivityBuilder } from './ActivityBuilder';
@@ -19,7 +18,6 @@ export function TeacherDashboard() {
   const [tab, setTab] = useState<TeacherTab>('activities');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [students, setStudents] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Estados de vistas secundarias
@@ -31,23 +29,18 @@ export function TeacherDashboard() {
   useEffect(() => {
     let unsubActs = () => {};
     let unsubGroups = () => {};
-    let unsubStudents = () => {};
 
     unsubActs = subscribeActivities('ALL', (acts) => {
       setActivities(acts);
       setLoading(false);
-      if (acts.length > 0 && !matrixActivityId) {
-        setMatrixActivityId(acts[0].id);
-      }
+      setMatrixActivityId((current) => current && acts.some((a) => a.id === current)
+        ? current : acts[0]?.id ?? null);
     });
 
     unsubGroups = subscribeGroups((g) => setGroups(g));
-    unsubStudents = subscribeStudents((s) => setStudents(s));
-
     return () => {
       unsubActs();
       unsubGroups();
-      unsubStudents();
     };
   }, []);
 
@@ -289,7 +282,6 @@ export function TeacherDashboard() {
               key={selectedMatrixActivity.id}
               activity={selectedMatrixActivity}
               group={selectedMatrixGroup}
-              students={students}
             />
           ) : (
             <EmptyState
@@ -302,7 +294,7 @@ export function TeacherDashboard() {
         </div>
       )}
 
-      {tab === 'students' && <GroupManager />}
+      {tab === 'students' && <GroupManager groups={groups} />}
 
       {/* Confirmación de Eliminación de Actividad */}
       <ConfirmDialog

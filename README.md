@@ -138,10 +138,15 @@ Diseñada para funcionar **100% sin conexión a internet** (offline-first) y gua
 - Editar respuestas o construir árboles guarda solo en `localStorage`: **cero escrituras de Firestore por edición**. Evaluar o guardar en la nube escribe una vez por ejercicio y acción. Ejemplo: 100 ediciones y una evaluación pasan de 101 escrituras a 1; es una comparación del código, no una medición del consumo real del proyecto.
 - El alumno comparte una sola suscripción de entregas entre su lista de actividades y el ejercicio abierto. Las modificaciones recientes del borrador tienen prioridad sobre una respuesta antigua de la nube.
 - La matriz obtiene las entregas de una actividad solo al abrirla o actualizarla. Cada consulta todavía lee los documentos que devuelve; conviene actualizar cuando se necesite revisar entregas.
+- Abrir el panel del profesor consulta grupos y actividades, sin descargar alumnos ni entregas. La matriz escucha solo el alumnado de su grupo; el listado completo de alumnos se carga únicamente al entrar en Alumnos y Grupos.
 - Las actividades, grupos y perfiles mantienen sus actualizaciones para conservar los cierres de actividades, asignaciones y bajas. La caché de Firestore no elimina por sí sola los cobros de escuchas remotas.
 - Los borradores locales no se transfieren entre dispositivos ni se recuperan al borrar los datos del navegador. El profesor ve lo enviado mediante guardar o evaluar. Los envíos solicitados sin conexión se sincronizan al volver internet.
 
 Referencia: [facturación de escuchas de Firestore](https://firebase.google.com/docs/firestore/pricing#listening_to_query_results).
+
+## Eliminar grupos
+
+En **Alumnos y Grupos**, selecciona un grupo y pulsa **Eliminar grupo**. La confirmación conserva cuentas, contraseñas, entregas y otras membresías; los alumnos siguen disponibles en **Todos los alumnos**. Si existen actividades asignadas, primero hay que moverlas a otro grupo o eliminarlas. La comprobación usa el servidor y requiere conexión. El borrado del grupo y sus membresías se confirma en un único lote (hasta 499 miembros), incluyendo cuentas desactivadas, sin consultas adicionales al abrir el panel.
 
 ## Estado de publicación (17 de octubre de 2026)
 

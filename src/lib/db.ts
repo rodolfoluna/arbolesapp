@@ -12,6 +12,8 @@ import {
   where,
   writeBatch,
   getDocs,
+  getDocsFromServer,
+  limit,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getDb, isFirebaseConfigured } from './firebase';
@@ -99,11 +101,12 @@ export function subscribeGroups(cb: Cb<Group[]>, onError: ErrCb = logErr): Unsub
   );
 }
 
-export function subscribeStudents(cb: Cb<UserProfile[]>, onError: ErrCb = logErr): Unsubscribe {
+function subscribeStudentRoster(cb: Cb<UserProfile[]>, onError: ErrCb, groupId?: string): Unsubscribe {
   if (!isFirebaseConfigured) {
     const handler = () => {
       localStudents = loadLs(LS_STUDENTS, DEMO_STUDENTS);
-      cb(localStudents.filter((s) => !s.disabled), { fromCache: true, hasPendingWrites: false });
+      cb(localStudents.filter((s) => s.role === 'student' && !s.disabled &&
+        (!groupId || s.groupIds?.includes(groupId))), { fromCache: true, hasPendingWrites: false });
     };
     handler();
     window.addEventListener('arboles_db_change', handler);
@@ -111,17 +114,33 @@ export function subscribeStudents(cb: Cb<UserProfile[]>, onError: ErrCb = logErr
   }
 
   return onSnapshot(
-    query(collection(getDb(), 'users'), where('role', '==', 'student')),
+    // Una sola condición usa el índice automático de arrays; no requiere índice compuesto.
+    query(collection(getDb(), 'users'), groupId
+      ? where('groupIds', 'array-contains', groupId)
+      : where('role', '==', 'student')),
     { includeMetadataChanges: true },
     (s) => {
       const items = s.docs
         .map((d) => ({ ...(d.data() as UserProfile), uid: d.id }))
-        .filter((u) => !u.disabled);
+        .filter((u) => u.role === 'student' && !u.disabled);
       items.sort((a, b) => a.fullName.localeCompare(b.fullName, 'es'));
       cb(items, s.metadata);
     },
     onError,
   );
+}
+
+export function subscribeStudents(cb: Cb<UserProfile[]>, onError: ErrCb = logErr): Unsubscribe {
+  return subscribeStudentRoster(cb, onError);
+}
+
+/** La matriz descarga y escucha únicamente el alumnado de su grupo. */
+export function subscribeStudentsInGroup(groupId: string, cb: Cb<UserProfile[]>, onError: ErrCb = logErr): Unsubscribe {
+  if (!groupId) {
+    cb([], { fromCache: true, hasPendingWrites: false });
+    return () => {};
+  }
+  return subscribeStudentRoster(cb, onError, groupId);
 }
 
 export function subscribeActivities(
@@ -293,8 +312,12 @@ export function renameGroup(id: string, name: string): Promise<void> {
   return trackWrite(updateDoc(doc(getDb(), 'groups', id), { name: name.trim() }));
 }
 
-export async function deleteGroup(id: string, memberUids: string[]): Promise<void> {
+export async function deleteGroup(id: string): Promise<void> {
+  const hasActivitiesMessage = 'Este grupo tiene actividades asignadas. Muévelas a otro grupo o elimínalas antes de eliminar el grupo.';
   if (!isFirebaseConfigured) {
+    if (localActivities.some((activity) => activity.groupId === id)) {
+      throw new Error(hasActivitiesMessage);
+    }
     localGroups = localGroups.filter((g) => g.id !== id);
     localStudents = localStudents.map((s) => ({
       ...s,
@@ -305,8 +328,16 @@ export async function deleteGroup(id: string, memberUids: string[]): Promise<voi
   }
 
   const db = getDb();
+  // Require server results: a cached empty list must never authorize deletion.
+  const activities = await getDocsFromServer(query(collection(db, 'activities'), where('groupId', '==', id), limit(1)));
+  if (!activities.empty) throw new Error(hasActivitiesMessage);
+  // Include disabled accounts too, without depending on the currently displayed roster.
+  const members = await getDocsFromServer(query(collection(db, 'users'), where('groupIds', 'array-contains', id)));
+  if (members.size > 499) {
+    throw new Error('El grupo supera los 499 miembros. Reduce sus integrantes antes de eliminarlo para completar la operación de forma atómica.');
+  }
   const batch = writeBatch(db);
-  memberUids.forEach((uid) => batch.update(doc(db, 'users', uid), { groupIds: arrayRemove(id) }));
+  members.docs.forEach((member) => batch.update(member.ref, { groupIds: arrayRemove(id) }));
   batch.delete(doc(db, 'groups', id));
   return trackWrite(batch.commit());
 }
