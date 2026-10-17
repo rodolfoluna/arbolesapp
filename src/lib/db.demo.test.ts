@@ -96,3 +96,21 @@ it('no elimina un grupo con actividades ni modifica sus integrantes', async () =
   expect(callback.mock.calls[0][0].some((g: { id: string }) => g.id === 'gpo-ed-3a')).toBe(true);
   stop();
 });
+
+it('limpia entregas huérfanas y conserva las de actividades vigentes y las cuentas', async () => {
+  const db = await import('./db');
+  const student = { uid: 'demo-student-1', controlNumber: '22010456', fullName: 'Alumno de prueba' };
+  const exercise = { tree: EMPTY_TREE, answers: EMPTY_ANSWERS, updatedAt: 1, submitted: true, attempts: 1, score: 35 };
+  await db.saveExerciseSubmission(student, 'act-practica-1', 'ex1', exercise);
+  await db.saveExerciseSubmission(student, 'actividad-eliminada', 'ex1', exercise);
+  const orphans = await db.fetchOrphanSubmissions();
+  expect(orphans.map((item) => item.activityId)).toEqual(['actividad-eliminada']);
+  expect(await db.deleteOrphanSubmissions('actividad-eliminada', orphans.map((item) => item.id))).toBe(1);
+  expect(await db.fetchOrphanSubmissions()).toEqual([]);
+  expect((await db.fetchSubmissionsByActivity('act-practica-1'))[0].exercisesData.ex1.score).toBe(35);
+  const callback = vi.fn();
+  const stop = db.subscribeStudents(callback);
+  expect(callback.mock.calls[0][0]).toHaveLength(3);
+  await expect(db.deleteOrphanSubmissions('act-practica-1', ['act-practica-1_22010456'])).rejects.toThrow('La actividad existe');
+  stop();
+});

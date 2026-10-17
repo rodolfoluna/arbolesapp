@@ -9,10 +9,11 @@ import {
 import { GroupManager } from './GroupManager';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ProgressMatrix } from './ProgressMatrix';
+import { OrphanSubmissions } from './OrphanSubmissions';
 import { ConfirmDialog, EmptyState, PageHeader, Spinner, cx } from '../ui';
 import { STRUCTURE_LABEL, isLinearExercise } from '../../lib/linear/linear';
 
-type TeacherTab = 'activities' | 'matrix' | 'students';
+type TeacherTab = 'activities' | 'matrix' | 'students' | 'cleanup';
 
 export function TeacherDashboard() {
   const [tab, setTab] = useState<TeacherTab>('activities');
@@ -121,6 +122,12 @@ export function TeacherDashboard() {
             )}
           >
             👥 Alumnos y Grupos
+          </button>
+          <button onClick={() => setTab('cleanup')}
+            className={cx('rounded-full px-5 py-2 text-sm font-medium', tab === 'cleanup'
+              ? 'bg-primary-container text-on-primary-container font-semibold shadow-xs'
+              : 'text-text-secondary hover:bg-surface-variant')}>
+            Entregas sin actividad
           </button>
         </div>
 
@@ -295,6 +302,7 @@ export function TeacherDashboard() {
       )}
 
       {tab === 'students' && <GroupManager groups={groups} />}
+      {tab === 'cleanup' && <OrphanSubmissions />}
 
       {/* Confirmación de Eliminación de Actividad */}
       <ConfirmDialog

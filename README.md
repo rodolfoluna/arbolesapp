@@ -148,6 +148,10 @@ Referencia: [facturación de escuchas de Firestore](https://firebase.google.com/
 
 En **Alumnos y Grupos**, selecciona un grupo y pulsa **Eliminar grupo**. La confirmación conserva cuentas, contraseñas, entregas y otras membresías; los alumnos siguen disponibles en **Todos los alumnos**. Si existen actividades asignadas, primero hay que moverlas a otro grupo o eliminarlas. La comprobación usa el servidor y requiere conexión. El borrado del grupo y sus membresías se confirma en un único lote (hasta 499 miembros), incluyendo cuentas desactivadas, sin consultas adicionales al abrir el panel.
 
+## Entregas de actividades eliminadas
+
+En **Entregas sin actividad**, pulsa **Buscar entregas sin actividad** para consultar el servidor y agrupar las entregas por ID de actividad eliminada. Esta búsqueda manual lee todas las actividades y entregas; no se ejecuta al abrir el panel. Cada grupo permite confirmar el borrado permanente de hasta 200 entregas revisadas por operación. Se conservan las cuentas y las entregas de otras actividades. Una transacción comprueba otra vez que la actividad no existe antes de borrar, incluso si fue restaurada después de la búsqueda. Requiere conexión; no borra automáticamente entregas al eliminar una actividad.
+
 ## Estado de publicación (17 de octubre de 2026)
 
 GitHub Pages se retiró temporalmente el 16 de octubre y se reactiva el 17 de octubre de 2026 por solicitud del profesor, con la versión de ahorro de escrituras ya verificada. El flujo `deploy.yml` se habilita y la variable `PAGES_ENABLED` pasa a `true`. Las PWA ya instaladas o páginas abiertas pueden seguir funcionando y conectándose a Firebase incluso durante una pausa: retirar Pages no bloquea esas copias.

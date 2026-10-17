@@ -14,6 +14,7 @@ import {
   getDocs,
   getDocsFromServer,
   limit,
+  runTransaction,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getDb, isFirebaseConfigured } from './firebase';
@@ -226,6 +227,47 @@ export async function fetchSubmissionsByActivity(activityId: string): Promise<Su
   }
   const snapshot = await getDocs(query(collection(getDb(), 'submissions'), where('activityId', '==', activityId)));
   return snapshot.docs.map((d) => ({ ...(d.data() as Omit<Submission, 'id'>), id: d.id }));
+}
+
+/** Limpieza manual: nunca se ejecuta al abrir el panel. */
+export async function fetchOrphanSubmissions(): Promise<Submission[]> {
+  if (!isFirebaseConfigured) {
+    const activityIds = new Set(localActivities.map((activity) => activity.id));
+    return loadLs<Submission[]>(LS_SUBMISSIONS, []).filter((submission) => !activityIds.has(submission.activityId));
+  }
+  const db = getDb();
+  const [activities, submissions] = await Promise.all([
+    getDocsFromServer(collection(db, 'activities')),
+    getDocsFromServer(collection(db, 'submissions')),
+  ]);
+  const activityIds = new Set(activities.docs.map((activity) => activity.id));
+  return submissions.docs.map((item) => ({ ...item.data(), id: item.id } as Submission))
+    .filter((submission) => !activityIds.has(submission.activityId));
+}
+
+/** Solo elimina documentos revisados; vuelve a comprobar la actividad al confirmar. */
+export async function deleteOrphanSubmissions(activityId: string, ids: string[]): Promise<number> {
+  const uniqueIds = [...new Set(ids)];
+  if (uniqueIds.length > 200) throw new Error('Elimina como máximo 200 entregas por operación.');
+  const activeMessage = 'La actividad existe. Sus entregas no se pueden eliminar desde esta opción.';
+  if (!isFirebaseConfigured) {
+    if (localActivities.some((activity) => activity.id === activityId)) throw new Error(activeMessage);
+    const before = localSubmissions.length;
+    localSubmissions = localSubmissions.filter((submission) =>
+      submission.activityId !== activityId || !uniqueIds.includes(submission.id));
+    notifyDbChange();
+    return before - localSubmissions.length;
+  }
+  if (!uniqueIds.length) return 0;
+  const db = getDb();
+  return trackWrite(runTransaction(db, async (transaction) => {
+    const activity = await transaction.get(doc(db, 'activities', activityId));
+    if (activity.exists()) throw new Error(activeMessage);
+    const submissions = await Promise.all(uniqueIds.map((id) => transaction.get(doc(db, 'submissions', id))));
+    const targets = submissions.filter((submission) => submission.exists() && submission.data().activityId === activityId);
+    targets.forEach((submission) => transaction.delete(submission.ref));
+    return targets.length;
+  }));
 }
 
 export function subscribeMySubmissions(

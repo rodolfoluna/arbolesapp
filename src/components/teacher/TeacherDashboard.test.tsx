@@ -27,6 +27,7 @@ vi.mock('../../lib/db', () => ({
     return fixture.stopRoster;
   }),
   fetchSubmissionsByActivity: vi.fn(async () => []),
+  fetchOrphanSubmissions: vi.fn(), deleteOrphanSubmissions: vi.fn(),
   deleteActivity: vi.fn(), setActivityOpen: vi.fn(), createGroup: vi.fn(), deleteGroup: vi.fn(),
   updateStudentName: vi.fn(), removeStudent: vi.fn(), fetchCredentials: vi.fn(),
   newActivityId: vi.fn(), saveActivity: vi.fn(), resetExerciseSubmission: vi.fn(),
@@ -47,6 +48,7 @@ it('abrir el panel carga actividades y grupos sin consultar alumnado ni entregas
   expect(db.subscribeStudents).not.toHaveBeenCalled();
   expect(db.subscribeStudentsInGroup).not.toHaveBeenCalled();
   expect(db.fetchSubmissionsByActivity).not.toHaveBeenCalled();
+  expect(db.fetchOrphanSubmissions).not.toHaveBeenCalled();
 });
 
 it('la matriz carga solo su grupo y cancela la escucha anterior al cambiar de actividad', async () => {
