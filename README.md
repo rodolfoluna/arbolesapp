@@ -150,6 +150,8 @@ En **Alumnos y Grupos**, selecciona un grupo y pulsa **Eliminar grupo**. La conf
 
 ## Entregas de actividades eliminadas
 
+Al borrar una actividad, la confirmación permite marcar **Eliminar también todas sus entregas**. Por defecto se conservan. Si se marca, la actividad se cierra, se borran únicamente sus entregas en lotes y se elimina la actividad al terminar. Si falla una limpieza intermedia, queda cerrada para reintentar; las entregas ya borradas no se recuperan. Esta opción conserva las cuentas y las entregas de otras actividades, sin consultas adicionales al abrir el panel. Un cliente antiguo con escrituras pendientes podría enviar nuevas entregas después; la limpieza manual sigue disponible para esos casos.
+
 En **Entregas sin actividad**, pulsa **Buscar entregas sin actividad** para consultar el servidor y agrupar las entregas por ID de actividad eliminada. Esta búsqueda manual lee todas las actividades y entregas; no se ejecuta al abrir el panel. Cada grupo permite confirmar el borrado permanente de hasta 200 entregas revisadas por operación. Se conservan las cuentas y las entregas de otras actividades. Una transacción comprueba otra vez que la actividad no existe antes de borrar, incluso si fue restaurada después de la búsqueda. Requiere conexión; no borra automáticamente entregas al eliminar una actividad.
 
 ## Estado de publicación (17 de octubre de 2026)

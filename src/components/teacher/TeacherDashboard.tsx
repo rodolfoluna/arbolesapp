@@ -10,7 +10,7 @@ import { GroupManager } from './GroupManager';
 import { ActivityBuilder } from './ActivityBuilder';
 import { ProgressMatrix } from './ProgressMatrix';
 import { OrphanSubmissions } from './OrphanSubmissions';
-import { ConfirmDialog, EmptyState, PageHeader, Spinner, cx } from '../ui';
+import { Modal, EmptyState, PageHeader, Spinner, cx } from '../ui';
 import { STRUCTURE_LABEL, isLinearExercise } from '../../lib/linear/linear';
 
 type TeacherTab = 'activities' | 'matrix' | 'students' | 'cleanup';
@@ -26,6 +26,9 @@ export function TeacherDashboard() {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [matrixActivityId, setMatrixActivityId] = useState<string | null>(null);
   const [deletingActivity, setDeletingActivity] = useState<Activity | null>(null);
+  const [deleteActivitySubmissions, setDeleteActivitySubmissions] = useState(false);
+  const [isDeletingActivity, setIsDeletingActivity] = useState(false);
+  const [deleteActivityError, setDeleteActivityError] = useState('');
 
   useEffect(() => {
     let unsubActs = () => {};
@@ -54,12 +57,17 @@ export function TeacherDashboard() {
   };
 
   const handleDeleteActivity = async () => {
-    if (!deletingActivity) return;
+    if (!deletingActivity || isDeletingActivity) return;
+    setIsDeletingActivity(true);
+    setDeleteActivityError('');
     try {
-      await deleteActivity(deletingActivity.id);
+      await deleteActivity(deletingActivity.id, deleteActivitySubmissions);
       setDeletingActivity(null);
     } catch (err) {
-      alert('Error al eliminar actividad: ' + err);
+      setDeleteActivityError('No se pudo completar la eliminación. ' + (err instanceof Error ? err.message : String(err)) +
+        (deleteActivitySubmissions ? ' Si la limpieza ya comenzó, algunas entregas pueden haberse eliminado y la actividad queda cerrada. Puedes reintentar para terminar.' : ' Puedes reintentar.'));
+    } finally {
+      setIsDeletingActivity(false);
     }
   };
 
@@ -244,7 +252,11 @@ export function TeacherDashboard() {
                             Editar
                           </button>
                           <button
-                            onClick={() => setDeletingActivity(act)}
+                            onClick={() => {
+                              setDeletingActivity(act);
+                              setDeleteActivitySubmissions(false);
+                              setDeleteActivityError('');
+                            }}
                             className="btn-ghost btn-sm text-xs text-red-500 hover:bg-red-500/10"
                             title="Eliminar actividad"
                           >
@@ -305,20 +317,32 @@ export function TeacherDashboard() {
       {tab === 'cleanup' && <OrphanSubmissions />}
 
       {/* Confirmación de Eliminación de Actividad */}
-      <ConfirmDialog
+      <Modal
         open={!!deletingActivity}
         title="Eliminar Actividad"
-        danger
-        confirmLabel="Eliminar Actividad"
-        message={
-          <>
-            ¿Seguro que deseas eliminar la actividad{' '}
-            <b className="text-white">{deletingActivity?.title}</b>? Esta acción no se puede deshacer.
-          </>
-        }
-        onConfirm={handleDeleteActivity}
-        onClose={() => setDeletingActivity(null)}
-      />
+        size="sm"
+        onClose={() => { if (!isDeletingActivity) setDeletingActivity(null); }}
+        footer={<>
+          <button className="btn-ghost" disabled={isDeletingActivity} onClick={() => setDeletingActivity(null)}>Cancelar</button>
+          <button className="btn-danger" disabled={isDeletingActivity} onClick={handleDeleteActivity}>
+            {isDeletingActivity ? 'Eliminando…' : 'Eliminar Actividad'}
+          </button>
+        </>}
+      >
+        <div className="space-y-4 text-sm">
+          <p>¿Eliminar la actividad <b>{deletingActivity?.title}</b>? Esta acción no se puede deshacer.</p>
+          <label className="flex items-start gap-3">
+            <input type="checkbox" checked={deleteActivitySubmissions} disabled={isDeletingActivity || !!deleteActivityError}
+              onChange={(event) => setDeleteActivitySubmissions(event.target.checked)} />
+            <span>Eliminar también todas sus entregas</span>
+          </label>
+          <p>{deleteActivitySubmissions
+            ? 'Se borrarán permanentemente sus borradores en la nube, respuestas, calificaciones e intentos. Las cuentas de los alumnos y otras actividades se conservarán.'
+            : 'Sus entregas se conservarán y podrás eliminarlas después desde Entregas sin actividad.'}</p>
+          {isDeletingActivity && <p role="status">Espera a que termine la eliminación antes de cerrar esta página.</p>}
+          {deleteActivityError && <p role="alert" className="text-coral-400">{deleteActivityError}</p>}
+        </div>
+      </Modal>
     </main>
   );
 }

@@ -122,3 +122,33 @@ it('una eliminación fallida conserva la selección y permite reintentar', async
   await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
   expect(db.deleteGroup).toHaveBeenCalledTimes(2);
 });
+
+it.each([false, true])('el borrado de actividad envía la elección eliminar entregas=%s', async (remove) => {
+  vi.mocked(db.deleteActivity).mockResolvedValueOnce(undefined);
+  render(<TeacherDashboard />);
+  fireEvent.click(screen.getAllByTitle('Eliminar actividad')[0]);
+  const checkbox = screen.getByRole('checkbox', { name: 'Eliminar también todas sus entregas' }) as HTMLInputElement;
+  expect(checkbox.checked).toBe(false);
+  if (remove) fireEvent.click(checkbox);
+  fireEvent.click(screen.getByRole('button', { name: 'Eliminar Actividad' }));
+  await waitFor(() => expect(db.deleteActivity).toHaveBeenCalledExactlyOnceWith('a-qa', remove));
+  await waitFor(() => expect(screen.queryByRole('checkbox')).toBeNull());
+});
+
+it('cancelar restablece la opción y no elimina; una falla conserva el diálogo para reintentar', async () => {
+  vi.mocked(db.deleteActivity).mockRejectedValueOnce(new Error('Sin conexión')).mockResolvedValueOnce(undefined);
+  render(<TeacherDashboard />);
+  fireEvent.click(screen.getAllByTitle('Eliminar actividad')[0]);
+  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+  expect(db.deleteActivity).not.toHaveBeenCalled();
+  fireEvent.click(screen.getAllByTitle('Eliminar actividad')[0]);
+  expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
+  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.click(screen.getByRole('button', { name: 'Eliminar Actividad' }));
+  await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Puedes reintentar'));
+  expect((screen.getByRole('checkbox') as HTMLInputElement).disabled).toBe(true);
+  fireEvent.click(screen.getByRole('button', { name: 'Eliminar Actividad' }));
+  await waitFor(() => expect(screen.queryByRole('checkbox')).toBeNull());
+  expect(db.deleteActivity).toHaveBeenCalledTimes(2);
+});

@@ -474,14 +474,31 @@ export function setActivityOpen(id: string, open: boolean): Promise<void> {
   return trackWrite(updateDoc(doc(getDb(), 'activities', id), { 'settings.open': open, updatedAt: Date.now() }));
 }
 
-export function deleteActivity(id: string): Promise<void> {
+export function deleteActivity(id: string, deleteSubmissions = false): Promise<void> {
   if (!isFirebaseConfigured) {
     localActivities = localActivities.filter((a) => a.id !== id);
+    if (deleteSubmissions) localSubmissions = localSubmissions.filter((submission) => submission.activityId !== id);
     notifyDbChange();
     return Promise.resolve();
   }
 
-  return trackWrite(deleteDoc(doc(getDb(), 'activities', id)));
+  const db = getDb();
+  const activityRef = doc(db, 'activities', id);
+  if (!deleteSubmissions) return trackWrite(deleteDoc(activityRef));
+
+  return trackWrite((async () => {
+    // Keep the activity visible and closed until cleanup succeeds, so failures can be retried.
+    await updateDoc(activityRef, { 'settings.open': false, updatedAt: Date.now() });
+    while (true) {
+      const submissions = await getDocsFromServer(query(collection(db, 'submissions'), where('activityId', '==', id), limit(400)));
+      const batch = writeBatch(db);
+      submissions.docs.forEach((submission) => batch.delete(submission.ref));
+      const done = submissions.size < 400;
+      if (done) batch.delete(activityRef);
+      await batch.commit();
+      if (done) return;
+    }
+  })());
 }
 
 function stripUndefined<T>(value: T): T {

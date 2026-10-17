@@ -114,3 +114,18 @@ it('limpia entregas huérfanas y conserva las de actividades vigentes y las cuen
   await expect(db.deleteOrphanSubmissions('act-practica-1', ['act-practica-1_22010456'])).rejects.toThrow('La actividad existe');
   stop();
 });
+
+it.each([false, true])('borrar actividad con eliminarEntregas=%s respeta la elección y otras entregas', async (remove) => {
+  const db = await import('./db');
+  const student = { uid: 'demo-student-1', controlNumber: '22010456', fullName: 'Alumno de prueba' };
+  const exercise = { tree: EMPTY_TREE, answers: EMPTY_ANSWERS, updatedAt: 1, submitted: true, attempts: 1, score: 35 };
+  await db.saveExerciseSubmission(student, 'act-practica-1', 'ex1', exercise);
+  await db.saveExerciseSubmission(student, 'otra-actividad', 'ex1', exercise);
+  await db.deleteActivity('act-practica-1', remove);
+  expect(await db.fetchSubmissionsByActivity('act-practica-1')).toHaveLength(remove ? 0 : 1);
+  expect(await db.fetchSubmissionsByActivity('otra-actividad')).toHaveLength(1);
+  const groups = vi.fn();
+  const stop = db.subscribeStudents(groups);
+  expect(groups.mock.calls[0][0]).toHaveLength(3);
+  stop();
+});
