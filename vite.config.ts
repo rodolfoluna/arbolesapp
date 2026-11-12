@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -7,9 +7,15 @@ import { VitePWA } from 'vite-plugin-pwa';
 // El workflow define BASE_PATH=/<repo>/ ; en local se usa "/".
 const base = process.env.BASE_PATH || '/';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const central = env.VITE_AUTH_MODE === 'central';
+  const apiOrigin = env.VITE_EDUCATIONAL_API_URL ? new URL(env.VITE_EDUCATIONAL_API_URL).origin : '';
+  return {
+  server: { port: 5173, strictPort: true },
   base,
   plugins: [
+    ...(central ? [{ name: 'central-security-policy', transformIndexHtml: (html: string) => html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://aula-identidad.onrender.com https://vtriyoxcumuygluqqstd.supabase.co ${apiOrigin}; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="referrer" content="no-referrer">`) }] : []),
     react(),
     tailwindcss(),
     VitePWA({
@@ -39,6 +45,9 @@ export default defineConfig({
         // Toda la interfaz (JS, CSS, fuentes, íconos) queda en caché para funcionar sin conexión.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2,webmanifest}'],
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/[?&](?:auth_callback|code|state|access_token|id_token)=/, /\/api\//],
+        // Authentication, directory and protected API responses are never runtime-cached.
+        runtimeCaching: [],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         cleanupOutdatedCaches: true,
       },
@@ -47,4 +56,5 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1200,
   },
+  };
 });
