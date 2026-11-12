@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
   server: { port: 5173, strictPort: true },
   base,
   plugins: [
-    ...(central ? [{ name: 'central-security-policy', transformIndexHtml: (html: string) => html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://aula-identidad.onrender.com https://vtriyoxcumuygluqqstd.supabase.co ${apiOrigin}; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="referrer" content="no-referrer">`) }] : []),
+    ...(central ? [{ name: 'central-security-policy', apply: 'build' as const, transformIndexHtml: (html: string) => html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://aula-identidad.onrender.com https://vtriyoxcumuygluqqstd.supabase.co ${apiOrigin}; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="referrer" content="no-referrer">`) }] : []),
     react(),
     tailwindcss(),
     VitePWA({

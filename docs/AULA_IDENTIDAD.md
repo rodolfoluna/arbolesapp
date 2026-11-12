@@ -2,9 +2,11 @@
 
 ## Estado de esta entrega
 
-Implementación preparada en el repositorio, **sin activar ni desplegar sobre los usuarios reales**. `VITE_AUTH_MODE=legacy` conserva el acceso anterior durante la preparación. No se han migrado documentos ni modificado reglas en Firebase remoto. No se han creado alumnos de prueba en producción.
+Backend desplegado en [Render](https://arboles-api.onrender.com/health) el 11 de noviembre de 2026, con credencial administrativa configurada por el profesor como archivo secreto, plan Free y despliegues automáticos desactivados. `/health` respondió 200; las peticiones sin token o con token inválido, 401; un origen no permitido, 403. Esto no acredita todavía un inicio OAuth completo.
 
-Los dos clientes públicos ya fueron creados en Supabase y habilitados en Aula Identidad el 11 de noviembre de 2026 con autorización explícita del profesor. La activación todavía exige desplegar el backend, respaldar y revisar vínculos, ensayar en una copia y finalmente bloquear el acceso directo a Firestore. Cambiar solo el botón de inicio de sesión no completa la integración.
+Se respaldó Firestore antes y después de aplicar **33 vínculos revisados (1 profesor y 32 alumnos)**. La comparación verificó que los 2 grupos y las 3 actividades permanecen idénticos y que se conservan IDs y contenido académico de las 88 entregas. Una entrega histórica cambió de propietario a la cuenta activa con autorización explícita; conserva su UID anterior como referencia. Siete perfiles locales sin coincidencia central permanecen conservados, sin vinculación automática. Los respaldos, planes y verificaciones contienen datos privados y permanecen excluidos de Git en `backups/` y `migration-private/`.
+
+Los dos clientes públicos están creados en Supabase y habilitados en Aula Identidad. La página pública sigue usando `VITE_AUTH_MODE=legacy`; no se han desplegado las reglas centrales ni cambiado `main`. Hasta completar las pruebas de ingreso real y el corte, una suspensión central no revoca las sesiones Firebase antiguas. Cambiar solo el botón de acceso no completa la integración.
 
 Fuentes: contrato revisado en `C:\ws\AuthApp\docs\INTEGRACION.md`, `docs\SEGURIDAD.md`, ejemplo PWA y `src/app.js` / `src/service.js`. No se leyó el `.env` de la central. Discovery público consultado el **11 de noviembre de 2026**: issuer, authorization/token/JWKS coinciden con el documento; admite `code`, clientes públicos `none`, PKCE `S256` y `openid profile`. No se solicita `offline_access` ni renovación automática.
 
@@ -181,7 +183,7 @@ npx firebase-tools deploy --only firestore:rules --config firebase.central.json 
 
 ## Reversión
 
-Antes de activar, la reversión es conservar la publicación actual: no hubo cambios remotos. Después de activar:
+La publicación actual conserva el acceso legacy. Ya existen vínculos remotos respaldados; para deshacerlos usar el procedimiento específico siguiente. Después de activar:
 
 - Si solo falla la UI, volver a una compilación central anterior y mantener las reglas cerradas; evita reabrir Firebase directo innecesariamente.
 - Para revertir únicamente los vínculos aplicados, mantener mantenimiento, respaldar el estado actual y usar el respaldo anterior y **el mismo archivo links revisado**:
@@ -207,9 +209,9 @@ npm run lint
 
 Se incluyen pruebas con repositorio local en memoria, servidor HTTP loopback y criptografía real de fixtures: roles, propiedad/pertenencia, rechazo del catálogo para alumnos, CORS, 401/403/503, estado/versión/cliente, firma/audience/expiración, PKCE/state/nonce de la biblioteca, callback directo y limpieza de URL, sesión/recarga/logout, selector con paginación y suspendidos, conservación de IDs y membresías, unicidad de vínculos, transferencias históricas, notas/intentos en servidor y borrador tras falla. Los tokens y usuarios de fixtures no se envían a la central real.
 
-Resultado local de esta entrega: **113 pruebas aprobadas**. Comprobación TypeScript de frontend y backend y compilaciones legacy/central aprobadas. La compilación central de ensayo usa un Client ID y backend ficticios solo para comprobar el empaquetado, no como conexión real. `node tools/check-public-bundle.mjs --central` comprueba CSP, exclusión del callback y ausencia de patrones de claves administrativas; no sustituye una auditoría completa de secretos.
+Resultado local de esta entrega: **113 pruebas aprobadas**. Comprobación TypeScript de frontend y backend y compilaciones legacy/central aprobadas. También se compiló una vista local con el Client ID de desarrollo y la URL real del backend; compilarla no acredita por sí solo el flujo OAuth. `node tools/check-public-bundle.mjs --central` comprueba CSP, exclusión del callback y ausencia de patrones de claves administrativas; no sustituye una auditoría completa de secretos.
 
-**No se ha probado OAuth real de extremo a extremo**, ni aplicado una migración real, ni verificado IAM/Firestore remoto o el despliegue de reglas. Los dos Client IDs y sus registros habilitados ya están verificados en los paneles; todavía faltan servidor y credenciales administrativas del Firebase educativo y revisión de identidades. Los tests del repositorio en memoria no sustituyen un ensayo con Firestore en una copia. Las reglas centrales se entregan como archivo separado para no retirar el acceso actual antes de verificar la transición.
+**No se ha probado OAuth real de extremo a extremo ni desplegado las reglas centrales.** El backend real, su conectividad administrativa y los vínculos remotos sí fueron comprobados mediante respaldo y comparación. Falta verificar el ingreso real con profesor y alumno, la revocación central y el corte que bloqueará los SDKs anteriores. Los tests con repositorio en memoria no sustituyen esas comprobaciones. Las reglas centrales siguen como archivo separado para conservar el acceso actual durante la transición.
 
 Las dependencias preexistentes presentan avisos en `npm audit` (incluido Firebase); no se aplican downgrades mayores automáticos. Revisar la salida actual antes de activar y planear las actualizaciones incompatibles por separado.
 
