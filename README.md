@@ -169,6 +169,6 @@ gh workflow run deploy.yml --ref main --repo rodolfoluna/arbolesapp
 
 Verificar que el despliegue terminó correctamente y que la URL vuelve a responder. No es necesario recrear Firebase ni borrar datos para reanudar.
 
-## Aula Identidad: integración preparada
+## Aula Identidad: acceso público
 
-El proyecto incluye un modo de acceso central con OAuth/PKCE y backend de permisos para conservar Firestore y sus datos actuales. Está desactivado por defecto durante la transición. Consulta [configuración, respaldo, migración, activación y reversión](docs/AULA_IDENTIDAD.md). No actives el modo central sin registrar los clientes OAuth, desplegar el backend y aplicar las reglas de acceso correspondientes tras el ensayo.
+La publicación usa Aula Identidad con OAuth/PKCE y el backend https://arboles-api.onrender.com. Conserva Firestore, los grupos y las entregas existentes. Las reglas centrales bloquean el acceso directo de los clientes Firebase antiguos. Las instrucciones anteriores de contraseñas propias, alta CSV y modo demo corresponden al modo legacy; las cuentas se administran ahora en Aula Identidad. Consulta [configuración, respaldo, migración, activación y reversión](docs/AULA_IDENTIDAD.md).

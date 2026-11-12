@@ -43,7 +43,7 @@ jobs:
 
       - name: Build Vite PWA
         env:
-          VITE_AUTH_MODE: ${{ vars.VITE_AUTH_MODE || 'legacy' }}
+          VITE_AUTH_MODE: ${{ vars.VITE_AUTH_MODE || 'central' }}
           VITE_AULA_CLIENT_ID: ${{ vars.VITE_AULA_CLIENT_ID }}
           VITE_EDUCATIONAL_API_URL: ${{ vars.VITE_EDUCATIONAL_API_URL }}
           BASE_PATH: ${{ steps.pages.outputs.base_path || '/arbolesapp/' }}
@@ -58,7 +58,14 @@ jobs:
         run: npm run build
 
       - name: Check public bundle
-        run: npm run check:bundle
+        env:
+          VITE_AUTH_MODE: ${{ vars.VITE_AUTH_MODE || 'central' }}
+        run: |
+          if [ "$VITE_AUTH_MODE" = "central" ]; then
+            npm run check:bundle -- --central
+          else
+            npm run check:bundle
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

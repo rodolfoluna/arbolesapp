@@ -1,66 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Un usuario es profesor si:
-    // 1. Su correo no pertenece al dominio sintético de los alumnos (@arboles.app)
-    // 2. O su documento en /users/{uid} tiene role == "teacher"
-    function isTeacher() {
-      return isAuthenticated() && (
-        (request.auth.token.email != null && !request.auth.token.email.matches('(?i).*@arboles\\.app$')) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "teacher")
-      );
-    }
-
-    function isStudent() {
-      return isAuthenticated() && !isTeacher();
-    }
-
-    function isOwner(uid) {
-      return isAuthenticated() && request.auth.uid == uid;
-    }
-
-    // Colección de Usuarios
-    match /users/{uid} {
-      allow read: if isAuthenticated();
-      allow write: if isTeacher() || isOwner(uid);
-    }
-
-    // Colección de Grupos
-    match /groups/{groupId} {
-      allow read: if isAuthenticated();
-      allow write: if isTeacher();
-    }
-
-    // Colección de Actividades
-    match /activities/{activityId} {
-      allow read: if isAuthenticated();
-      allow write: if isTeacher();
-    }
-
-    // Colección de Entregas (Submissions)
-    match /submissions/{subId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isTeacher() || (
-        isAuthenticated() && request.resource.data.studentUid == request.auth.uid
-      );
-      allow delete: if isTeacher();
-    }
-
-    // Colección de Alias de Inicio de Sesión (Logins por Número de Control)
-    match /logins/{controlNumber} {
-      allow read: if true;
-      allow write: if isTeacher();
-    }
-
-    // Colección de Credenciales Temporales Iniciales
-    match /credentials/{controlNumber} {
-      allow read, write: if isTeacher();
-    }
+    // Modo central: solo Admin SDK en el backend, con /me por operación.
+    // Bloquea también sesiones Firebase antiguas y clientes desactualizados.
+    match /{document=**} { allow read, write: if false; }
   }
 }
