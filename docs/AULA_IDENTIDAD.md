@@ -18,6 +18,10 @@ El 12 de noviembre de 2026 se normalizó `BASE_PATH` para terminar siempre en `/
 
 El 12 de noviembre de 2026 se completó el ingreso OAuth de la cuenta central docente desde GitHub Pages, con consentimiento autorizado y retorno a la URL pública limpia. Se abrió la administración de grupos: aparecen los dos grupos anteriores, el curso muestra sus 32 alumnos y están disponibles los controles de creación, retiro y eliminación. La búsqueda en el catálogo central devolvió el alumno solicitado; seleccionarlo habilitó incorporar al grupo y se limpió la selección sin enviar cambios. Se cargó la matriz y se abrió una entrega lineal existente: respuestas del alumno y esperadas, nota 100, dos intentos históricos y control de reintento visibles. No se ejecutaron altas, eliminaciones, cambios de membresía ni restablecimientos; esta prueba acredita acceso y revisión, no ensaya mutaciones en producción. La sesión docente se mantuvo al recargar. El panel de entregas sin actividad también es accesible; no se repitió su consulta completa para evitar lecturas adicionales.
 
+## Prueba real de administración de un grupo temporal
+
+El 12 de noviembre de 2026 se ejecutó desde el panel docente público el ciclo completo: crear un grupo temporal único, incorporar un alumno ya vinculado, retirarlo y eliminar únicamente ese grupo vacío con confirmación del profesor. Al incorporarlo se verificó que la membresía original del alumno seguía presente; al retirarlo volvió a su estado anterior. La comparación del respaldo final con el respaldo previo confirmó idénticos los dos grupos originales, las tres actividades, las 88 entregas y los 33 vínculos centrales, así como todas las membresías. No se crearon actividades ni usuarios centrales, ni se enviaron respuestas, evaluaciones o restablecimientos. Los informes y respaldos con datos personales permanecen en los directorios privados excluidos de Git.
+
 ## Arquitectura y permisos
 
 ```text
