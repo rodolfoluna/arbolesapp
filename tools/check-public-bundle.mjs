@@ -19,6 +19,8 @@ console.info(`Archivos públicos revisados: ${await scan('dist')}. Sin patrones 
 const html = await readFile('dist/index.html', 'utf8');
 if (process.argv.includes('--central')) {
   if (!html.includes('Content-Security-Policy')) throw new Error('Falta CSP en la compilación central.');
+  const manifest = JSON.parse(await readFile('dist/manifest.webmanifest', 'utf8'));
+  if (typeof manifest.start_url !== 'string' || !manifest.start_url.endsWith('/')) throw new Error('La ruta base debe terminar en / para coincidir con el callback OAuth registrado.');
   const sw = await readFile('dist/sw.js', 'utf8');
   if (!sw.includes('auth_callback')) throw new Error('Falta exclusión del callback en el service worker.');
   console.info('CSP y exclusión del callback comprobadas. Esto no prueba un login OAuth real.');

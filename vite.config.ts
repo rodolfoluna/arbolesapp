@@ -5,7 +5,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // En GitHub Pages la app vive en https://<usuario>.github.io/<repo>/
 // El workflow define BASE_PATH=/<repo>/ ; en local se usa "/".
-const base = process.env.BASE_PATH || '/';
+const requestedBase = process.env.BASE_PATH || '/';
+// configure-pages can return /arbolesapp without its final slash. OAuth
+// callbacks must match the registered /arbolesapp/?auth_callback=1 exactly.
+const base = requestedBase.endsWith('/') ? requestedBase : `${requestedBase}/`;
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
