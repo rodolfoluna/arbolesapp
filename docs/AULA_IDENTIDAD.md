@@ -14,6 +14,10 @@ Fuentes: contrato revisado en `C:\ws\AuthApp\docs\INTEGRACION.md`, `docs\SEGURID
 
 El 12 de noviembre de 2026 se normalizó `BASE_PATH` para terminar siempre en `/`: `configure-pages` puede devolver `/arbolesapp`, pero el callback registrado exige `https://rodolfoluna.github.io/arbolesapp/?auth_callback=1`. La comprobación del bundle central ahora rechaza una ruta inicial sin barra final. El despliegue de la corrección `37494e5` terminó correctamente en GitHub Pages. El respaldo posterior confirma los 2 grupos, las 3 actividades, las 88 entregas y todas las membresías sin cambios respecto al corte. Se completó un ingreso real de alumno desde el origen público: consentimiento, callback limpio, portal con tres actividades y avances previos, y apertura de una entrega lineal con respuestas, nota 100 y dos intentos históricos intactos. El primer acceso agotó la espera durante el arranque de Render Free; se verificó el reingreso correcto con el backend activo. La sesión y los avances persistieron al recargar la página pública. No se enviaron respuestas ni evaluaciones.
 
+## Verificación del docente en la página pública
+
+El 12 de noviembre de 2026 se completó el ingreso OAuth de la cuenta central docente desde GitHub Pages, con consentimiento autorizado y retorno a la URL pública limpia. Se abrió la administración de grupos: aparecen los dos grupos anteriores, el curso muestra sus 32 alumnos y están disponibles los controles de creación, retiro y eliminación. La búsqueda en el catálogo central devolvió el alumno solicitado; seleccionarlo habilitó incorporar al grupo y se limpió la selección sin enviar cambios. Se cargó la matriz y se abrió una entrega lineal existente: respuestas del alumno y esperadas, nota 100, dos intentos históricos y control de reintento visibles. No se ejecutaron altas, eliminaciones, cambios de membresía ni restablecimientos; esta prueba acredita acceso y revisión, no ensaya mutaciones en producción. La sesión docente se mantuvo al recargar. El panel de entregas sin actividad también es accesible; no se repitió su consulta completa para evitar lecturas adicionales.
+
 ## Arquitectura y permisos
 
 ```text
