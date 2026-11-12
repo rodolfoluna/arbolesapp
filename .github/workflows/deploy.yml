@@ -32,14 +32,20 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Test permissions and educational flows
+        run: npm test && npm run check:server
+
       - name: Build Vite PWA
         env:
+          VITE_AUTH_MODE: ${{ vars.VITE_AUTH_MODE || 'legacy' }}
+          VITE_AULA_CLIENT_ID: ${{ vars.VITE_AULA_CLIENT_ID }}
+          VITE_EDUCATIONAL_API_URL: ${{ vars.VITE_EDUCATIONAL_API_URL }}
           BASE_PATH: ${{ steps.pages.outputs.base_path || '/arbolesapp/' }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -50,6 +56,9 @@ jobs:
           VITE_TEACHER_EMAIL: ${{ secrets.VITE_TEACHER_EMAIL }}
           VITE_EMAIL_DOMAIN: ${{ secrets.VITE_EMAIL_DOMAIN || 'arboles.app' }}
         run: npm run build
+
+      - name: Check public bundle
+        run: npm run check:bundle
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

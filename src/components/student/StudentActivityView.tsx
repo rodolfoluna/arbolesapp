@@ -19,6 +19,7 @@ import {
   type LinearEvaluation,
 } from '../../lib/linear/linear';
 import { cx, ScorePill } from '../ui';
+import { centralEnabled } from '../../lib/central';
 
 interface Props {
   activity: Activity;
@@ -31,6 +32,8 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
   const [activeExIndex, setActiveExIndex] = useState(0);
   const [mobileTab, setMobileTab] = useState<'tree' | 'questions'>('tree');
   const [draftError, setDraftError] = useState(false);
+  const [centralPending, setCentralPending] = useState(false);
+  const [cloudError, setCloudError] = useState('');
 
   // Estados locales del ejercicio actual para interactividad inmediata y offline
   const [currentTree, setCurrentTree] = useState<FlatTree>(EMPTY_TREE);
@@ -46,7 +49,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
 
   const maxAttempts = activity.settings?.maxAttempts ?? 0;
   const hasExhaustedAttempts = maxAttempts > 0 && currentAttempts >= maxAttempts;
-  const isReadOnly = !activity.settings.open || hasExhaustedAttempts;
+  const isReadOnly = !activity.settings.open || hasExhaustedAttempts || centralPending;
 
   // Clave de almacenamiento local de respaldo
   const localBackupKey = `tree_sub_${activity.id}_${profile?.controlNumber || 'anon'}_${exId}`;
@@ -116,9 +119,9 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
       answers,
       ...(isLinear ? { linearAnswers } : {}),
       updatedAt: now,
-      submitted: !!evalRes || (prevSub?.submitted ?? false),
-      attempts: resolvedAttempts,
-      ...(evalRes ? {
+      submitted: centralEnabled ? (prevSub?.submitted ?? false) : !!evalRes || (prevSub?.submitted ?? false),
+      attempts: centralEnabled ? (prevSub?.attempts ?? currentAttempts) : resolvedAttempts,
+      ...(evalRes && !centralEnabled ? {
         submittedAt: now,
         score: evalRes.total,
         structureExact: evalRes.structureExact,
@@ -130,7 +133,17 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
       evalRes ? 'evaluate' : saveToCloud ? 'save' : 'edit',
       (data) => {
         if (profile?.controlNumber && profile?.uid) {
-          saveExerciseSubmission(profile, activity.id, exId, data);
+          const pending = saveExerciseSubmission(profile, activity.id, exId, data, evalRes ? 'evaluate' : 'save');
+          if (pending) {
+            setCentralPending(true); setCloudError('');
+            void pending.then((saved) => {
+              const confirmed = saved.exercisesData[exId];
+              setCurrentAttempts(confirmed.attempts);
+              try { localStorage.setItem(localBackupKey, JSON.stringify(confirmed)); } catch { setDraftError(true); }
+            }).catch((err) => {
+              setCloudError(err instanceof Error ? err.message : 'No se pudo guardar. Conserva tu borrador y vuelve a intentar.');
+            }).finally(() => setCentralPending(false));
+          }
         }
       },
     );
@@ -158,7 +171,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
   const handleSaveAndEvaluate = (evalResult: Evaluation) => {
     if (isReadOnly) return;
     const nextAttempts = currentAttempts + 1;
-    setCurrentAttempts(nextAttempts);
+    if (!centralEnabled) setCurrentAttempts(nextAttempts);
     setLastEval(evalResult);
     persistChanges(currentTree, currentAnswers, currentLinear, evalResult, nextAttempts);
   };
@@ -166,7 +179,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
   const handleSaveAndEvaluateLinear = (evalResult: LinearEvaluation) => {
     if (isReadOnly) return;
     const nextAttempts = currentAttempts + 1;
-    setCurrentAttempts(nextAttempts);
+    if (!centralEnabled) setCurrentAttempts(nextAttempts);
     setLastLinearEval(evalResult);
     persistChanges(currentTree, currentAnswers, currentLinear, evalResult, nextAttempts);
   };
@@ -188,6 +201,8 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
     <div className="flex h-[calc(100dvh-4rem)] flex-col bg-bg-app text-text-primary">
       {/* Barra Superior de la Actividad y Pestañas de Ejercicios */}
       <div className="border-b border-outline bg-surface-container px-4 py-2 sm:px-6">
+        {centralPending && <p role="status" className="text-sm">Verificando acceso y guardando en el servidor…</p>}
+        {cloudError && <p role="alert" className="text-coral-400">{cloudError}</p>}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
           <div className="flex items-center gap-3">
             {onBack && (
@@ -264,7 +279,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
               ? 'No se pudo guardar el borrador en este dispositivo. Guarda en la nube antes de salir.'
               : 'Borrador guardado en este dispositivo. Para enviarlo al profesor, evalúa o guarda en la nube.'}
           </span>
-          <button className="btn-secondary btn-sm" disabled={!activity.settings.open}
+          <button className="btn-secondary btn-sm" disabled={!activity.settings.open || centralPending || (centralEnabled && hasExhaustedAttempts)}
             onClick={() => persistChanges(currentTree, currentAnswers, currentLinear, undefined, currentAttempts, true)}>
             Guardar en la nube
           </button>
@@ -281,6 +296,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
             return (
               <button
                 key={ex.id}
+                disabled={centralPending}
                 onClick={() => {
                   setActiveExIndex(idx);
                 }}

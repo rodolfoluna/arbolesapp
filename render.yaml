@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: arboles-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run check:server
+    startCommand: npm run server
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: FIREBASE_PROJECT_ID
+        value: eddt4-3b228
+      - key: AULA_CLIENTS_JSON
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secrets/firebase-admin.json

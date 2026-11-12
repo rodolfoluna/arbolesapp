@@ -17,8 +17,14 @@ import {
 } from '../../lib/accounts';
 import { normalizeControlNumber } from '../../lib/firebase';
 import { ConfirmDialog, Modal, PageHeader, Spinner, cx } from '../ui';
+import { centralEnabled } from '../../lib/central';
+import { CentralGroupManager } from './CentralGroupManager';
 
 export function GroupManager({ groups }: { groups: Group[] }) {
+  return centralEnabled ? <CentralGroupManager groups={groups} /> : <LegacyGroupManager groups={groups} />;
+}
+
+function LegacyGroupManager({ groups }: { groups: Group[] }) {
   const [students, setStudents] = useState<UserProfile[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>(() => groups[0]?.id || '');
 

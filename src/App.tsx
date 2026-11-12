@@ -8,6 +8,7 @@ import { TeacherDashboard } from './components/teacher/TeacherDashboard';
 import { StudentDashboard } from './components/student/StudentDashboard';
 import { FirebaseGuideModal } from './components/FirebaseGuideModal';
 import { FullScreenLoader } from './components/ui';
+import { centralEnabled } from './lib/central';
 
 function AppShell() {
   const { user, loading, isTeacher, enterDemoMode } = useAuth();
@@ -37,7 +38,7 @@ function AppShell() {
       <Navbar onOpenFirebaseGuide={() => setIsGuideOpen(true)} />
 
       {/* Modal obligatorio si el alumno aún no cambia la contraseña inicial */}
-      <MustChangePasswordModal />
+      {!centralEnabled && <MustChangePasswordModal />}
 
       {/* Contenido principal según el rol */}
       <div className="flex-1">

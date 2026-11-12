@@ -2,7 +2,7 @@
 
 Aplicación Web Progresiva (**PWA**) instalable en celulares, laptops y computadoras para la enseñanza, construcción interactiva y evaluación automática de **Árboles** (Binario por niveles, BST y AVL) y **Estructuras Lineales** (Listas, Pilas y Colas con simulación secuencial de operaciones).
 
-Diseñada para funcionar **100% sin conexión a internet** (offline-first) y guardar borradores en el dispositivo. Las respuestas se envían a **Google Firebase** al evaluar o pulsar **Guardar en la nube**; si no hay conexión, esos envíos quedan en la cola persistente de Firestore, alojada gratis en **GitHub Pages**.
+Permite construir ejercicios y guardar borradores en el dispositivo. En el acceso Firebase anterior, evaluar o pulsar **Guardar en la nube** envía las respuestas mediante la cola persistente de Firestore, también tras recuperar conexión. El modo **Aula Identidad** conserva los borradores, pero exige validar el acceso en línea antes de enviar. La PWA se publica en **GitHub Pages**.
 
 ---
 
@@ -168,3 +168,7 @@ gh workflow run deploy.yml --ref main --repo rodolfoluna/arbolesapp
 ```
 
 Verificar que el despliegue terminó correctamente y que la URL vuelve a responder. No es necesario recrear Firebase ni borrar datos para reanudar.
+
+## Aula Identidad: integración preparada
+
+El proyecto incluye un modo de acceso central con OAuth/PKCE y backend de permisos para conservar Firestore y sus datos actuales. Está desactivado por defecto durante la transición. Consulta [configuración, respaldo, migración, activación y reversión](docs/AULA_IDENTIDAD.md). No actives el modo central sin registrar los clientes OAuth, desplegar el backend y aplicar las reglas de acceso correspondientes tras el ensayo.

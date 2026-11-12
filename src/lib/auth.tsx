@@ -17,6 +17,8 @@ import {
   syntheticEmail,
 } from './firebase';
 import type { UserProfile } from './models';
+import { centralEnabled } from './central';
+import { CentralAuthProvider } from '../components/CentralAuthProvider';
 
 interface AuthState {
   loading: boolean;
@@ -30,7 +32,7 @@ interface AuthState {
   enterDemoMode: (role: 'teacher' | 'student', studentCn?: string) => void;
 }
 
-const AuthCtx = createContext<AuthState | null>(null);
+export const AuthCtx = createContext<AuthState | null>(null);
 
 export function friendlyAuthError(e: unknown): string {
   const code = (e as { code?: string }).code ?? '';
@@ -56,6 +58,10 @@ export function friendlyAuthError(e: unknown): string {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  return centralEnabled ? <CentralAuthProvider>{children}</CentralAuthProvider> : <LegacyAuthProvider>{children}</LegacyAuthProvider>;
+}
+
+function LegacyAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(isFirebaseConfigured);

@@ -1,0 +1,8 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Modo central: solo Admin SDK en el backend, con /me por operación.
+    // Bloquea también sesiones Firebase antiguas y clientes desactualizados.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

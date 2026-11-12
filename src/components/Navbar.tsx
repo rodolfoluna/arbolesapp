@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { useWriteQueue } from '../lib/syncStore';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { ThemeToggle } from './ThemeToggle';
+import { centralEnabled, centralUrl, refreshCentralData } from '../lib/central';
 
 interface NavbarProps {
   onOpenFirebaseGuide?: () => void;
@@ -38,7 +39,7 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
         <div className="flex items-center gap-4">
           <Brand subtitle={isTeacher ? 'Panel del Profesor' : 'Portal de Estudiantes'} />
 
-          {!isFirebaseConfigured && (
+          {!centralEnabled && !isFirebaseConfigured && (
             <button
               onClick={onOpenFirebaseGuide}
               className="hidden items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 md:inline-flex transition-colors"
@@ -50,6 +51,10 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
 
         {/* Indicador de Red, Conmutador de Tema y Perfil */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {centralEnabled && <>
+            <button className="btn-ghost btn-sm" onClick={refreshCentralData}>Actualizar datos</button>
+            <a className="btn-ghost btn-sm" href={centralUrl}>Mi cuenta central</a>
+          </>}
           {/* Badge de Sincronización */}
           <div
             className={cx(
@@ -63,6 +68,8 @@ export function Navbar({ onOpenFirebaseGuide }: NavbarProps) {
                 ? 'Conectado. Los borradores se guardan en este dispositivo; evalúa o pulsa Guardar en la nube para enviarlos.'
                 : lastError
                 ? `No se pudo guardar en la nube: ${lastError}. Vuelve a guardar.`
+                : !isOnline && centralEnabled
+                ? 'Sin conexión. Los borradores permanecen en este dispositivo; vuelve a ingresar y guarda cuando se restablezca la conexión.'
                 : !isOnline
                 ? 'Sin conexión. Los envíos solicitados se subirán al reconectar; los borradores permanecen en este dispositivo.'
                 : `Sincronizando ${pending} cambio(s) con la nube...`

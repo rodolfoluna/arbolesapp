@@ -4,6 +4,7 @@ export type Role = 'teacher' | 'student';
 
 export interface UserProfile {
   uid: string;
+  central_user_id?: string;
   role: Role;
   controlNumber: string;
   fullName: string;

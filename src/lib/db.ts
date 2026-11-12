@@ -22,6 +22,7 @@ import type { Activity, Credential, ExerciseSubmission, Group, Submission, UserP
 import { submissionId } from './models';
 import { fireAndForget, trackWrite } from './syncStore';
 import { DEMO_ACTIVITIES, DEMO_GROUPS, DEMO_STUDENTS } from './demoData';
+import { centralEnabled, centralData, centralSubscribe, centralWrite } from './central';
 
 type Cb<T> = (items: T, meta: { fromCache: boolean; hasPendingWrites: boolean }) => void;
 type ErrCb = (e: Error) => void;
@@ -80,6 +81,7 @@ function notifyDbChange() {
 /* ----------------------------- Lecturas ---------------------------- */
 
 export function subscribeGroups(cb: Cb<Group[]>, onError: ErrCb = logErr): Unsubscribe {
+  if (centralEnabled) return centralSubscribe('groups', {}, cb, onError);
   if (!isFirebaseConfigured) {
     const handler = () => {
       localGroups = loadLs(LS_GROUPS, DEMO_GROUPS);
@@ -103,6 +105,7 @@ export function subscribeGroups(cb: Cb<Group[]>, onError: ErrCb = logErr): Unsub
 }
 
 function subscribeStudentRoster(cb: Cb<UserProfile[]>, onError: ErrCb, groupId?: string): Unsubscribe {
+  if (centralEnabled) return centralSubscribe('students', { groupId }, cb, onError);
   if (!isFirebaseConfigured) {
     const handler = () => {
       localStudents = loadLs(LS_STUDENTS, DEMO_STUDENTS);
@@ -149,6 +152,7 @@ export function subscribeActivities(
   cb: Cb<Activity[]>,
   onError: ErrCb = logErr,
 ): Unsubscribe {
+  if (centralEnabled) return centralSubscribe('activities', {}, cb, onError);
   if (!isFirebaseConfigured) {
     const handler = () => {
       localActivities = loadLs(LS_ACTIVITIES, DEMO_ACTIVITIES);
@@ -182,6 +186,7 @@ export function subscribeActivities(
 }
 
 export function subscribeActivity(id: string, cb: Cb<Activity | null>, onError: ErrCb = logErr): Unsubscribe {
+  if (centralEnabled) return centralSubscribe('activity', { id }, cb, onError);
   if (!isFirebaseConfigured) {
     const act = localActivities.find((a) => a.id === id) || null;
     cb(act, { fromCache: true, hasPendingWrites: false });
@@ -201,6 +206,7 @@ export function subscribeSubmissionsByActivity(
   cb: Cb<Submission[]>,
   onError: ErrCb = logErr,
 ): Unsubscribe {
+  if (centralEnabled) return centralSubscribe('submissions', { activityId }, cb, onError);
   if (!isFirebaseConfigured) {
     const handler = () => {
       localSubmissions = loadLs(LS_SUBMISSIONS, []);
@@ -222,6 +228,7 @@ export function subscribeSubmissionsByActivity(
 
 /** Consulta bajo demanda: la matriz no descarga cada edición de todos los alumnos. */
 export async function fetchSubmissionsByActivity(activityId: string): Promise<Submission[]> {
+  if (centralEnabled) return centralData('submissions', { activityId });
   if (!isFirebaseConfigured) {
     return loadLs<Submission[]>(LS_SUBMISSIONS, []).filter((s) => s.activityId === activityId);
   }
@@ -231,6 +238,7 @@ export async function fetchSubmissionsByActivity(activityId: string): Promise<Su
 
 /** Limpieza manual: nunca se ejecuta al abrir el panel. */
 export async function fetchOrphanSubmissions(): Promise<Submission[]> {
+  if (centralEnabled) return centralData('orphanSubmissions');
   if (!isFirebaseConfigured) {
     const activityIds = new Set(localActivities.map((activity) => activity.id));
     return loadLs<Submission[]>(LS_SUBMISSIONS, []).filter((submission) => !activityIds.has(submission.activityId));
@@ -247,6 +255,7 @@ export async function fetchOrphanSubmissions(): Promise<Submission[]> {
 
 /** Solo elimina documentos revisados; vuelve a comprobar la actividad al confirmar. */
 export async function deleteOrphanSubmissions(activityId: string, ids: string[]): Promise<number> {
+  if (centralEnabled) return trackWrite(centralWrite('deleteOrphans', { activityId, ids }));
   const uniqueIds = [...new Set(ids)];
   if (uniqueIds.length > 200) throw new Error('Elimina como máximo 200 entregas por operación.');
   const activeMessage = 'La actividad existe. Sus entregas no se pueden eliminar desde esta opción.';
@@ -275,6 +284,7 @@ export function subscribeMySubmissions(
   cb: Cb<Submission[]>,
   onError: ErrCb = logErr,
 ): Unsubscribe {
+  if (centralEnabled) return centralSubscribe('mySubmissions', {}, cb, onError);
   if (!isFirebaseConfigured) {
     const handler = () => {
       localSubmissions = loadLs(LS_SUBMISSIONS, []);
@@ -300,6 +310,7 @@ export function subscribeSubmission(
   cb: Cb<Submission | null>,
   onError: ErrCb = logErr,
 ): Unsubscribe {
+  if (centralEnabled) return centralSubscribe('submission', { activityId, controlNumber }, cb, onError);
   if (!isFirebaseConfigured) {
     const handler = () => {
       localSubmissions = loadLs(LS_SUBMISSIONS, []);
@@ -323,6 +334,7 @@ export function subscribeSubmission(
 }
 
 export async function fetchCredentials(): Promise<Credential[]> {
+  if (centralEnabled) throw new Error('Las contraseñas se administran únicamente en Aula Identidad.');
   if (!isFirebaseConfigured) {
     return loadLs(LS_CREDENTIALS, localCredentials);
   }
@@ -333,6 +345,7 @@ export async function fetchCredentials(): Promise<Credential[]> {
 /* ----------------------------- Grupos ------------------------------ */
 
 export function createGroup(name: string): Promise<string> {
+  if (centralEnabled) return trackWrite(centralWrite('createGroup', { name }));
   if (!isFirebaseConfigured) {
     const id = `gpo-${Date.now()}`;
     localGroups.push({ id, name: name.trim(), createdAt: Date.now() });
@@ -345,6 +358,7 @@ export function createGroup(name: string): Promise<string> {
 }
 
 export function renameGroup(id: string, name: string): Promise<void> {
+  if (centralEnabled) return trackWrite(centralWrite('renameGroup', { id, name }));
   if (!isFirebaseConfigured) {
     localGroups = localGroups.map((g) => (g.id === id ? { ...g, name: name.trim() } : g));
     notifyDbChange();
@@ -355,6 +369,7 @@ export function renameGroup(id: string, name: string): Promise<void> {
 }
 
 export async function deleteGroup(id: string): Promise<void> {
+  if (centralEnabled) return trackWrite(centralWrite('deleteGroup', { id }));
   const hasActivitiesMessage = 'Este grupo tiene actividades asignadas. Muévelas a otro grupo o elimínalas antes de eliminar el grupo.';
   if (!isFirebaseConfigured) {
     if (localActivities.some((activity) => activity.groupId === id)) {
@@ -385,6 +400,9 @@ export async function deleteGroup(id: string): Promise<void> {
 }
 
 export function setGroupMembership(uids: string[], groupId: string, member: boolean): Promise<void> {
+  if (centralEnabled) return trackWrite((async () => {
+    for (const uid of uids) await centralWrite('membership', { uid, groupId, member });
+  })());
   if (!isFirebaseConfigured) {
     localStudents = localStudents.map((s) => {
       if (!uids.includes(s.uid)) return s;
@@ -406,6 +424,7 @@ export function setGroupMembership(uids: string[], groupId: string, member: bool
 }
 
 export function updateStudentName(uid: string, controlNumber: string, fullName: string): Promise<void> {
+  if (centralEnabled) return Promise.reject(new Error('Edita los datos personales en Aula Identidad.'));
   if (!isFirebaseConfigured) {
     localStudents = localStudents.map((s) => (s.uid === uid ? { ...s, fullName } : s));
     localCredentials = localCredentials.map((c) =>
@@ -423,6 +442,7 @@ export function updateStudentName(uid: string, controlNumber: string, fullName: 
 }
 
 export function removeStudent(student: UserProfile): Promise<void> {
+  if (centralEnabled) return Promise.reject(new Error('Administra suspensiones en Aula Identidad o retira al alumno de un grupo local.'));
   if (!isFirebaseConfigured) {
     localStudents = localStudents.map((s) => (s.uid === student.uid ? { ...s, disabled: true } : s));
     notifyDbChange();
@@ -440,6 +460,7 @@ export function removeStudent(student: UserProfile): Promise<void> {
 /* --------------------------- Actividades --------------------------- */
 
 export function newActivityId(): string {
+  if (centralEnabled) return crypto.randomUUID();
   if (!isFirebaseConfigured) {
     return `act-${Date.now()}`;
   }
@@ -447,6 +468,7 @@ export function newActivityId(): string {
 }
 
 export function saveActivity(a: Activity): Promise<void> {
+  if (centralEnabled) return trackWrite(centralWrite('saveActivity', { activity: a }));
   if (!isFirebaseConfigured) {
     const idx = localActivities.findIndex((it) => it.id === a.id);
     if (idx >= 0) localActivities[idx] = a;
@@ -463,6 +485,7 @@ export function saveActivity(a: Activity): Promise<void> {
 }
 
 export function setActivityOpen(id: string, open: boolean): Promise<void> {
+  if (centralEnabled) return trackWrite(centralWrite('setActivityOpen', { id, open }));
   if (!isFirebaseConfigured) {
     localActivities = localActivities.map((a) =>
       a.id === id ? { ...a, settings: { ...a.settings, open } } : a
@@ -475,6 +498,7 @@ export function setActivityOpen(id: string, open: boolean): Promise<void> {
 }
 
 export function deleteActivity(id: string, deleteSubmissions = false): Promise<void> {
+  if (centralEnabled) return trackWrite(centralWrite('deleteActivity', { id, deleteSubmissions }));
   if (!isFirebaseConfigured) {
     localActivities = localActivities.filter((a) => a.id !== id);
     if (deleteSubmissions) localSubmissions = localSubmissions.filter((submission) => submission.activityId !== id);
@@ -520,7 +544,11 @@ export function saveExerciseSubmission(
   activityId: string,
   exerciseId: string,
   data: ExerciseSubmission,
+  intent: 'save' | 'evaluate' = 'evaluate',
 ) {
+  if (centralEnabled) {
+    return trackWrite(centralWrite<Submission>('saveSubmission', { activityId, exerciseId, data, intent }));
+  }
   if (!isFirebaseConfigured) {
     const subId = submissionId(activityId, student.controlNumber);
     let sub = localSubmissions.find((s) => s.id === subId);
@@ -564,6 +592,7 @@ export function saveExerciseSubmission(
 }
 
 export function resetExerciseSubmission(activityId: string, controlNumber: string, exerciseId: string): Promise<void> {
+  if (centralEnabled) return trackWrite(centralWrite('resetSubmission', { activityId, controlNumber, exerciseId }));
   if (!isFirebaseConfigured) {
     const sub = localSubmissions.find(
       (s) => s.activityId === activityId && s.controlNumber === controlNumber

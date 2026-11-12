@@ -3,6 +3,7 @@ import { useAuth, friendlyAuthError } from '../lib/auth';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { Logo, Spinner, cx } from './ui';
 import { ThemeToggle } from './ThemeToggle';
+import { centralEnabled, centralUrl } from '../lib/central';
 
 interface Props {
   onOpenFirebaseGuide?: () => void;
@@ -10,7 +11,7 @@ interface Props {
 }
 
 export function LoginView({ onEnterDemoMode }: Props) {
-  const { login } = useAuth();
+  const { login, error: sessionError } = useAuth();
   const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +35,20 @@ export function LoginView({ onEnterDemoMode }: Props) {
       setLoading(false);
     }
   };
+
+  if (centralEnabled) return <main className="grid min-h-dvh place-items-center p-4 bg-bg-app text-text-primary">
+    <div className="card max-w-md space-y-4">
+      <h1 className="text-2xl font-semibold">Estructura de Datos APP</h1>
+      <p>Ingresa con tu cuenta de Aula Identidad. Allí se administran las contraseñas y el cambio del primer acceso.</p>
+      {(error || sessionError) && <p role="alert" className="text-coral-400">{error || sessionError}</p>}
+      <button className="btn-primary" disabled={loading} onClick={async () => {
+        setLoading(true); setError(null);
+        try { await login('', ''); } catch (err) { setError(friendlyAuthError(err)); setLoading(false); }
+      }}>{loading ? 'Conectando con Aula Identidad…' : 'Ingresar con Aula Identidad'}</button>
+      <p className="text-sm">El servicio puede tardar en iniciar después de un periodo sin uso. No cierres la página mientras conecta.</p>
+      <a className="text-primary underline" href={centralUrl}>Administrar cuenta en Aula Identidad</a>
+    </div>
+  </main>;
 
   return (
     <div className="relative grid min-h-dvh place-items-center p-4 bg-bg-app text-text-primary transition-colors duration-200">

@@ -10,6 +10,7 @@ import { doc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import Papa from 'papaparse';
 import { firebaseConfig, getDb, isFirebaseConfigured, normalizeControlNumber, syntheticEmail } from './firebase';
 import type { UserProfile } from './models';
+import { centralEnabled } from './central';
 
 /* ------------------------- Contraseñas ----------------------------- */
 
@@ -144,6 +145,7 @@ export async function createStudents(
   groupIds: string[],
   onProgress?: (done: number, total: number, last: CreateResult) => void,
 ): Promise<CreateResult[]> {
+  if (centralEnabled) throw new Error('Registra alumnos y carga CSV en Aula Identidad. Después incorpóralos desde el catálogo central.');
   const existingCn = new Set(existing.map((s) => s.controlNumber));
   const results: CreateResult[] = [];
 
@@ -258,6 +260,7 @@ export async function createStudents(
  * guardan por número de control, el alumno conserva todo su avance.
  */
 export async function resetStudentPassword(student: UserProfile): Promise<string> {
+  if (centralEnabled) throw new Error('Restablece las contraseñas desde Aula Identidad.');
   const tempPassword = generatePassword(6);
 
   if (!isFirebaseConfigured) {

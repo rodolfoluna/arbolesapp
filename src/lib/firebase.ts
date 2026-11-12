@@ -30,7 +30,7 @@ let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
 let _db: Firestore | null = null;
 
-if (isFirebaseConfigured) {
+if (isFirebaseConfigured && env.VITE_AUTH_MODE !== 'central') {
   _app = initializeApp(firebaseConfig);
   _auth = getAuth(_app); // persistencia en IndexedDB: la sesión sobrevive sin conexión
   // Caché persistente en IndexedDB compartida entre pestañas: lecturas y escrituras offline.
