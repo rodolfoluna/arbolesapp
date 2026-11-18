@@ -1,3 +1,4 @@
+import { ALGORITHMS, ACTION_LABEL, isSortingExercise, sortingErrors, evaluateSorting, replaySorting } from '../src/lib/sorting/sorting.ts';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { HttpError, type Identity } from './identity.ts';
@@ -11,12 +12,15 @@ const idSchema = z.string().min(1).max(200).regex(/^[^/]+$/).refine((id) => id !
 const str = z.string().max(4000);
 const treeSchema = z.object({ rootId: z.string().nullable(), nodes: z.record(z.string(), z.object({ v: str, l: z.string().nullable(), r: z.string().nullable() })) });
 const answersSchema = z.object({ root: str, leaves: str, internals: str, height: str, preorder: str, inorder: str, postorder: str });
-const draftSchema = z.object({ tree: treeSchema, answers: answersSchema, linearAnswers: z.object({ finalState: str, extracted: str }).optional() });
+const sortActionSchema = z.object({ type:z.enum(Object.keys(ACTION_LABEL) as [keyof typeof ACTION_LABEL, ...(keyof typeof ACTION_LABEL)[]]), cards:z.array(z.number().int().min(0).max(11)).max(2), target:z.number().int().min(0).max(99).optional() });
+const sortingDraftSchema = z.object({ version:z.literal(1), actions:z.array(sortActionSchema).max(5000) });
+const draftSchema = z.object({ tree: treeSchema, answers: answersSchema, linearAnswers: z.object({ finalState: str, extracted: str }).optional(), sortingDraft:sortingDraftSchema.optional() });
 const exerciseSchema = z.object({
-  id: idSchema, title: z.string().max(300), kind: z.enum(['TREE', 'LINEAR']).optional(),
+  id: idSchema, title: z.string().max(300), kind: z.enum(['TREE', 'LINEAR', 'SORTING']).optional(),
   treeType: z.enum(['COMPLETE', 'BST', 'AVL']), dataType: z.enum(['NUMBER', 'STRING']), dataset: z.array(z.string().max(100)).max(100),
+  sorting: z.object({algorithm:z.enum(ALGORITHMS)}).optional(),
   linear: z.object({ structure: z.enum(['LIST', 'STACK', 'QUEUE']), ops: z.array(z.string().max(200)).max(200) }).optional(),
-}).refine((ex) => ex.kind !== 'LINEAR' || !!ex.linear);
+}).refine((ex) => ex.kind !== 'LINEAR' || !!ex.linear).refine(ex => !isSortingExercise(ex) || sortingErrors(ex).length===0, 'Ordenamiento requiere algoritmo válido y de 3 a 12 enteros entre 0 y 99.');
 const activitySchema = z.object({
   id: idSchema, groupId: idSchema, title: z.string().trim().min(1).max(300), description: z.string().max(10000),
   exercises: z.array(exerciseSchema).min(1).max(50).refine((items) => new Set(items.map((ex) => ex.id)).size === items.length),
@@ -195,7 +199,12 @@ export function educationalService(store: DataStore) {
           const prev = previous?.exercisesData?.[exerciseId];
           const attempts = prev?.attempts || 0, max = activity.settings.maxAttempts || 0;
           if (max > 0 && attempts >= max) throw new HttpError(403, 'Ya agotaste los intentos de este ejercicio.');
-          const evaluation = intent === 'evaluate' ? (isLinearExercise(exercise)
+          if (isSortingExercise(exercise)) {
+            if (!draft.sortingDraft) throw new HttpError(400, 'Falta el historial de ordenamiento.');
+            const run = replaySorting(exercise, draft.sortingDraft);
+            if (intent === 'evaluate' && !run.complete) throw new HttpError(400, 'Completa el recorrido antes de evaluar. Puedes guardar el borrador.');
+          }
+          const evaluation = intent === 'evaluate' ? (isSortingExercise(exercise) ? evaluateSorting(exercise, draft.sortingDraft) : isLinearExercise(exercise)
             ? evaluateLinear(exercise, draft.linearAnswers) : evaluateExercise(exercise, activity.settings, draft.tree, draft.answers)) : null;
           const result: ExerciseSubmission = { ...draft, updatedAt: Date.now(), attempts: attempts + (evaluation ? 1 : 0), submitted: !!evaluation || !!prev?.submitted,
             ...(evaluation ? { submittedAt: Date.now(), score: evaluation.total, structureExact: evaluation.structureExact }

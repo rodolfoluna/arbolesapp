@@ -172,3 +172,8 @@ Verificar que el despliegue terminó correctamente y que la URL vuelve a respond
 ## Aula Identidad: acceso público
 
 La publicación usa Aula Identidad con OAuth/PKCE y el backend https://arboles-api.onrender.com. Conserva Firestore, los grupos y las entregas existentes. Las reglas centrales bloquean el acceso directo de los clientes Firebase antiguos. Las instrucciones anteriores de contraseñas propias, alta CSV y modo demo corresponden al modo legacy; las cuentas se administran ahora en Aula Identidad. Consulta [configuración, respaldo, migración, activación y reversión](docs/AULA_IDENTIDAD.md).
+
+
+## Actividades de ordenamiento
+
+La versión en desarrollo incluye tarjetas y evaluación por pasos para diez algoritmos, el apartado **Leer algoritmo**, una plantilla docente de diez ejercicios y el historial de errores en la matriz. Consulta [uso, variantes y prueba local](docs/ORDENAMIENTO.md). Los clics se guardan localmente; guardar o evaluar envía un único historial por ejercicio.

@@ -1,3 +1,4 @@
+import { isSortingExercise, SORT_LABEL } from '../../lib/sorting/sorting';
 import { useEffect, useState } from 'react';
 import type { Activity, Group } from '../../lib/models';
 import {
@@ -216,7 +217,7 @@ export function TeacherDashboard() {
                             key={ex.id}
                             className="rounded-full bg-surface-variant px-2.5 py-0.5 font-mono text-[10px] text-text-secondary"
                           >
-                            {isLinearExercise(ex)
+                            {isSortingExercise(ex) ? `Ej ${i + 1}: ${SORT_LABEL[ex.sorting!.algorithm]} (${ex.dataset.length})` : isLinearExercise(ex)
                               ? `Ej ${i + 1}: ${STRUCTURE_LABEL[ex.linear!.structure]} (${ex.linear!.ops.length} ops)`
                               : `Ej ${i + 1}: ${ex.treeType} (${ex.dataset.length})`}
                           </span>

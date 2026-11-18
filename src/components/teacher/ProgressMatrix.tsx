@@ -1,3 +1,5 @@
+import { isSortingExercise, evaluateSorting } from '../../lib/sorting/sorting';
+import { SortingReview } from '../student/SortingExercisePanel';
 import { useEffect, useMemo, useState } from 'react';
 import type { Activity, Group, Submission, UserProfile } from '../../lib/models';
 import type { Exercise } from '../../lib/tree/types';
@@ -88,7 +90,7 @@ export function ProgressMatrix({ activity, group }: Props) {
   const handleOpenDetail = (student: UserProfile, exercise: Exercise) => {
     const sub = submissions.find((s) => s.controlNumber === student.controlNumber) || null;
     const exData = sub?.exercisesData?.[exercise.id];
-    const evalResult = isLinearExercise(exercise)
+    const evalResult = isSortingExercise(exercise) ? evaluateSorting(exercise, exData?.sortingDraft) : isLinearExercise(exercise)
       ? evaluateLinear(exercise, exData?.linearAnswers)
       : evaluateExercise(exercise, activity.settings, exData?.tree, exData?.answers);
     setDetailModal({ student, exercise, submission: sub, evalResult });
@@ -319,7 +321,7 @@ export function ProgressMatrix({ activity, group }: Props) {
               </div>
             </div>
 
-            {isLinearExercise(detailModal.exercise) ? (
+            {isSortingExercise(detailModal.exercise) ? <SortingReview exercise={detailModal.exercise} draft={detailModal.submission?.exercisesData[detailModal.exercise.id]?.sortingDraft}/> : isLinearExercise(detailModal.exercise) ? (
               <div className="card space-y-2 text-xs">
                 <div className="font-semibold text-text-primary">
                   {STRUCTURE_LABEL[detailModal.exercise.linear!.structure]} · elementos {STRUCTURE_ORDER_HINT[detailModal.exercise.linear!.structure]}
@@ -399,7 +401,7 @@ export function ProgressMatrix({ activity, group }: Props) {
             {/* Desglose de Respuestas del Cuestionario */}
             <div className="card overflow-hidden !p-0">
               <div className="border-b border-white/[0.08] px-4 py-2 text-xs font-semibold text-white">
-                {isLinearExercise(detailModal.exercise)
+                {isSortingExercise(detailModal.exercise) ? 'Evaluación del procedimiento de ordenamiento' : isLinearExercise(detailModal.exercise)
                   ? 'Evaluación de Estado Final y Datos Extraídos'
                   : 'Comparación de Respuestas Teóricas y Recorridos'}
               </div>

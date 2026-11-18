@@ -1,3 +1,5 @@
+import { ALGORITHMS, isSortingExercise, newSortingExercise, sortingErrors } from '../../lib/sorting/sorting';
+import { SortingExerciseEditor } from './SortingExerciseEditor';
 import { useMemo, useState } from 'react';
 import type { Activity, ActivitySettings, Group } from '../../lib/models';
 import { DEFAULT_SETTINGS } from '../../lib/models';
@@ -48,7 +50,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
 
   // Cálculo en vivo del Árbol Canónico y sus Propiedades para la Vista Previa del Profesor
   const preview = useMemo(() => {
-    if (!activeEx || isLinearExercise(activeEx)) return null;
+    if (!activeEx || isLinearExercise(activeEx) || isSortingExercise(activeEx)) return null;
     const root = buildExpected(activeEx.treeType, activeEx.dataset, activeEx.dataType);
     const flat = toFlat(root);
     const props = computeProps(root, settings.heightMode, settings.rootIsInternal);
@@ -107,7 +109,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
       alert('Por favor selecciona un grupo para asignar la actividad.');
       return;
     }
-    const linearErrors = exercises.flatMap(linearExerciseErrors);
+    const linearErrors = exercises.flatMap(ex => [...linearExerciseErrors(ex), ...sortingErrors(ex)]);
     if (linearErrors.length > 0) {
       alert('Corrige estos ejercicios antes de publicar:\n\n' + linearErrors.slice(0, 8).join('\n'));
       return;
@@ -138,7 +140,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
     <div className="space-y-6">
       <PageHeader
         title={activityToEdit ? 'Editar Actividad' : 'Nueva Actividad'}
-        subtitle="Configura ejercicios de árboles (por niveles, BST o AVL) o de estructuras lineales (lista, pila, cola) y revisa la solución esperada en tiempo real."
+        subtitle="Configura ejercicios de ordenamiento, árboles o estructuras lineales y revisa la solución esperada en tiempo real."
         actions={
           <div className="flex gap-2">
             <button onClick={onCancel} className="btn-ghost">
@@ -373,6 +375,12 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
           </div>
         </div>
 
+        {!activityToEdit && <button type="button" className="btn-secondary" onClick={() => {
+          if (!window.confirm('Crear la práctica de los diez algoritmos de ordenamiento reemplazará los ejercicios de este formulario. ¿Continuar?')) return;
+          setExercises(ALGORITHMS.map(a => newSortingExercise(a))); setSelectedExIndex(0);
+          if (!title.trim()) setTitle('Algoritmos de ordenamiento');
+        }}>Plantilla: los 10 algoritmos de ordenamiento</button>}
+        <button type="button" className="btn-secondary" onClick={() => { setExercises(prev => [...prev,newSortingExercise('BUBBLE')]);setSelectedExIndex(exercises.length); }}>+ Ejercicio de ordenamiento</button>
         {/* Pestañas de Ejercicios */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {exercises.map((ex, idx) => (
@@ -406,7 +414,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
         </div>
 
         {/* Editor del Ejercicio Seleccionado + Vista Previa Canónica */}
-        {isLinearExercise(activeEx) ? (
+        {isSortingExercise(activeEx) ? <SortingExerciseEditor key={activeEx.id} exercise={activeEx} onChange={updateActiveEx}/> : isLinearExercise(activeEx) ? (
           <LinearExerciseEditor key={activeEx.id} exercise={activeEx} onChange={updateActiveEx} />
         ) : (
         <div className="grid gap-6 lg:grid-cols-2">

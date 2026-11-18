@@ -1,3 +1,4 @@
+import type { SortDraft } from './sorting/sorting';
 import type { Answers, EvalSettings, Exercise, FlatTree, LinearAnswers } from './tree/types';
 
 export type Role = 'teacher' | 'student';
@@ -61,6 +62,7 @@ export interface ExerciseSubmission {
   answers: Answers;
   /** Solo en ejercicios de estructura lineal (lista/pila/cola). */
   linearAnswers?: LinearAnswers;
+  sortingDraft?: SortDraft;
   /** Marca de tiempo del cliente (ms). Sirve para resolver conflictos local vs nube. */
   updatedAt: number;
   submitted: boolean;

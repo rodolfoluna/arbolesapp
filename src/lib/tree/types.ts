@@ -1,3 +1,4 @@
+import type { SortAlgorithm } from '../sorting/sorting';
 /** Tipo de árbol que pide el profesor (determina cómo se genera el árbol esperado). */
 export type TreeType = 'COMPLETE' | 'BST' | 'AVL';
 
@@ -38,7 +39,7 @@ export interface EvalSettings {
 }
 
 /** Tipo de ejercicio: árbol (por defecto, si no se indica) o estructura lineal. */
-export type ExerciseKind = 'TREE' | 'LINEAR';
+export type ExerciseKind = 'TREE' | 'LINEAR' | 'SORTING';
 
 /** Estructura lineal sobre la que se ejecuta la secuencia de operaciones. */
 export type LinearStructure = 'LIST' | 'STACK' | 'QUEUE';
@@ -61,6 +62,8 @@ export interface Exercise {
   dataset: string[];
   /** Solo para kind === 'LINEAR'. */
   linear?: LinearConfig;
+  /** Ordenamiento ascendente, variante explícita por algoritmo. */
+  sorting?: { algorithm: SortAlgorithm };
 }
 
 /** Respuestas del alumno en un ejercicio de estructura lineal. */

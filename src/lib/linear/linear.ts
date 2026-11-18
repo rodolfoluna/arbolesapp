@@ -1,3 +1,4 @@
+import { isSortingExercise, SORT_LABEL } from '../sorting/sorting';
 import type { DataType, Exercise, LinearAnswers, LinearStructure } from '../tree/types';
 import { isValidValue, normalizeValue, splitList, valueKey } from '../tree/values';
 
@@ -31,7 +32,7 @@ export function isLinearExercise(ex: Pick<Exercise, 'kind' | 'linear'> | null | 
 
 /** Etiqueta corta para chips/pestañas: "ÁRBOL BST", "LISTA"... */
 export function exerciseBadge(ex: Exercise): string {
-  return isLinearExercise(ex) ? STRUCTURE_LABEL[ex.linear!.structure].toUpperCase() : ex.treeType;
+  return isSortingExercise(ex) ? SORT_LABEL[ex.sorting!.algorithm] : isLinearExercise(ex) ? STRUCTURE_LABEL[ex.linear!.structure].toUpperCase() : ex.treeType;
 }
 
 /** Secuencias de ejemplo con las que arranca un ejercicio lineal nuevo. */
