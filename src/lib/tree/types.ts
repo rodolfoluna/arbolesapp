@@ -1,3 +1,4 @@
+import type { SearchConfig } from '../search/search';
 import type { SortAlgorithm } from '../sorting/sorting';
 /** Tipo de árbol que pide el profesor (determina cómo se genera el árbol esperado). */
 export type TreeType = 'COMPLETE' | 'BST' | 'AVL';
@@ -39,7 +40,7 @@ export interface EvalSettings {
 }
 
 /** Tipo de ejercicio: árbol (por defecto, si no se indica) o estructura lineal. */
-export type ExerciseKind = 'TREE' | 'LINEAR' | 'SORTING';
+export type ExerciseKind = 'TREE' | 'LINEAR' | 'SORTING' | 'SEARCH';
 
 /** Estructura lineal sobre la que se ejecuta la secuencia de operaciones. */
 export type LinearStructure = 'LIST' | 'STACK' | 'QUEUE';
@@ -64,6 +65,7 @@ export interface Exercise {
   linear?: LinearConfig;
   /** Ordenamiento ascendente, variante explícita por algoritmo. */
   sorting?: { algorithm: SortAlgorithm };
+  search?: SearchConfig;
 }
 
 /** Respuestas del alumno en un ejercicio de estructura lineal. */

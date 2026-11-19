@@ -1,3 +1,4 @@
+import type { SearchDraft } from './search/search';
 import type { SortDraft } from './sorting/sorting';
 import type { Answers, EvalSettings, Exercise, FlatTree, LinearAnswers } from './tree/types';
 
@@ -63,6 +64,7 @@ export interface ExerciseSubmission {
   /** Solo en ejercicios de estructura lineal (lista/pila/cola). */
   linearAnswers?: LinearAnswers;
   sortingDraft?: SortDraft;
+  searchDraft?: SearchDraft;
   /** Marca de tiempo del cliente (ms). Sirve para resolver conflictos local vs nube. */
   updatedAt: number;
   submitted: boolean;

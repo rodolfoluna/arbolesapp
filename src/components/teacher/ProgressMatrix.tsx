@@ -1,3 +1,5 @@
+import {isSearchExercise,evaluateSearch} from '../../lib/search/search';
+import {SearchReview} from '../student/SearchExercisePanel';
 import { isSortingExercise, evaluateSorting } from '../../lib/sorting/sorting';
 import { SortingReview } from '../student/SortingExercisePanel';
 import { useEffect, useMemo, useState } from 'react';
@@ -90,7 +92,7 @@ export function ProgressMatrix({ activity, group }: Props) {
   const handleOpenDetail = (student: UserProfile, exercise: Exercise) => {
     const sub = submissions.find((s) => s.controlNumber === student.controlNumber) || null;
     const exData = sub?.exercisesData?.[exercise.id];
-    const evalResult = isSortingExercise(exercise) ? evaluateSorting(exercise, exData?.sortingDraft) : isLinearExercise(exercise)
+    const evalResult = isSearchExercise(exercise) ? evaluateSearch(exercise,exData?.searchDraft) : isSortingExercise(exercise) ? evaluateSorting(exercise, exData?.sortingDraft) : isLinearExercise(exercise)
       ? evaluateLinear(exercise, exData?.linearAnswers)
       : evaluateExercise(exercise, activity.settings, exData?.tree, exData?.answers);
     setDetailModal({ student, exercise, submission: sub, evalResult });
@@ -321,7 +323,7 @@ export function ProgressMatrix({ activity, group }: Props) {
               </div>
             </div>
 
-            {isSortingExercise(detailModal.exercise) ? <SortingReview exercise={detailModal.exercise} draft={detailModal.submission?.exercisesData[detailModal.exercise.id]?.sortingDraft}/> : isLinearExercise(detailModal.exercise) ? (
+            {isSearchExercise(detailModal.exercise) ? <SearchReview exercise={detailModal.exercise} draft={detailModal.submission?.exercisesData[detailModal.exercise.id]?.searchDraft}/> : isSortingExercise(detailModal.exercise) ? <SortingReview exercise={detailModal.exercise} draft={detailModal.submission?.exercisesData[detailModal.exercise.id]?.sortingDraft}/> : isLinearExercise(detailModal.exercise) ? (
               <div className="card space-y-2 text-xs">
                 <div className="font-semibold text-text-primary">
                   {STRUCTURE_LABEL[detailModal.exercise.linear!.structure]} · elementos {STRUCTURE_ORDER_HINT[detailModal.exercise.linear!.structure]}
@@ -401,7 +403,7 @@ export function ProgressMatrix({ activity, group }: Props) {
             {/* Desglose de Respuestas del Cuestionario */}
             <div className="card overflow-hidden !p-0">
               <div className="border-b border-white/[0.08] px-4 py-2 text-xs font-semibold text-white">
-                {isSortingExercise(detailModal.exercise) ? 'Evaluación del procedimiento de ordenamiento' : isLinearExercise(detailModal.exercise)
+                {isSearchExercise(detailModal.exercise) ? 'Evaluación de cálculo, inserción y búsqueda' : isSortingExercise(detailModal.exercise) ? 'Evaluación del procedimiento de ordenamiento' : isLinearExercise(detailModal.exercise)
                   ? 'Evaluación de Estado Final y Datos Extraídos'
                   : 'Comparación de Respuestas Teóricas y Recorridos'}
               </div>
