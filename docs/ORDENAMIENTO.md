@@ -29,3 +29,7 @@ Con `npm run dev -- --host 127.0.0.1 --port 5180 --strictPort`, abrir `http://12
 Las pruebas automatizadas cubren orden final y conservación de tarjetas con entradas ordenadas, invertidas, ceros y duplicados; estabilidad de los algoritmos estables; rechazo sin avance; reanudación de errores; validación en servidor; nota autoritativa, máximo de intentos, evaluación incompleta y borradores sin escrituras por clic. La prueba de navegador local verifica lectura del algoritmo, rechazo de intercambio prematuro, comparación/intercambio correctos, distribución Radix e historial docente. No se crearon actividades académicas reales durante este ensayo.
 
 Validación de esta entrega: 197 pruebas en 21 archivos, comprobación TypeScript del backend y compilación frontend correctas. La comprobación central del bundle valida CSP, callback y ausencia de patrones de claves administrativas.
+
+## Publicación verificada
+
+El 18 de noviembre de 2026 se desplegó el backend compatible en `arboles-api` (Render, commit `321cf2d`) y después la interfaz en GitHub Pages (commit `f118951`). Ambos despliegues finalizaron correctamente. El backend respondió 200 en `/health`; el bundle público contiene la plantilla y los diez algoritmos. Se verificó el ingreso docente, la generación de diez ejercicios en el formulario y la lectura de pseudocódigo. El formulario de comprobación no se guardó como actividad real. El respaldo posterior conserva idénticos los dos grupos, las tres actividades, las 88 entregas y los 33 vínculos centrales; todas las membresías permanecen intactas.
