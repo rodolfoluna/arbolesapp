@@ -1,6 +1,6 @@
 # Actividades de algoritmos de ordenamiento
 
-Estado al 18 de noviembre de 2026: implementado y probado en local; pendiente de despliegue coordinado del backend y GitHub Pages. No se modificaron datos académicos reales.
+Versión de publicación del 18 de noviembre de 2026: integrada con Aula Identidad, el backend de Render y GitHub Pages. El despliegue actualiza primero el backend compatible y después la interfaz. No requiere migrar ni recrear grupos o entregas; los ensayos previos no modificaron datos académicos reales.
 
 En **Nueva actividad → Plantilla: los 10 algoritmos de ordenamiento** se genera un ejercicio por algoritmo. La plantilla reemplaza los ejercicios del formulario con confirmación y solo está disponible al crear una actividad. También se pueden añadir ejercicios individuales y combinar tipos. Los ejercicios anteriores conservan sus formatos e IDs.
 

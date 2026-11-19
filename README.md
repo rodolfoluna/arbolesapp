@@ -176,4 +176,4 @@ La publicación usa Aula Identidad con OAuth/PKCE y el backend https://arboles-a
 
 ## Actividades de ordenamiento
 
-La versión en desarrollo incluye tarjetas y evaluación por pasos para diez algoritmos, el apartado **Leer algoritmo**, una plantilla docente de diez ejercicios y el historial de errores en la matriz. Consulta [uso, variantes y prueba local](docs/ORDENAMIENTO.md). Los clics se guardan localmente; guardar o evaluar envía un único historial por ejercicio.
+La app incluye tarjetas y evaluación por pasos para diez algoritmos, el apartado **Leer algoritmo**, una plantilla docente de diez ejercicios y el historial de errores en la matriz. Consulta [uso, variantes y prueba local](docs/ORDENAMIENTO.md). Los clics se guardan localmente; guardar o evaluar envía un único historial por ejercicio.
