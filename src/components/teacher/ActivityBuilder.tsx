@@ -1,5 +1,3 @@
-import {newSearchExercise,isSearchExercise,searchErrors} from '../../lib/search/search';
-import {SearchExerciseEditor} from './SearchExerciseEditor';
 import { ALGORITHMS, isSortingExercise, newSortingExercise, sortingErrors } from '../../lib/sorting/sorting';
 import { SortingExerciseEditor } from './SortingExerciseEditor';
 import { useMemo, useState } from 'react';
@@ -52,7 +50,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
 
   // Cálculo en vivo del Árbol Canónico y sus Propiedades para la Vista Previa del Profesor
   const preview = useMemo(() => {
-    if (!activeEx || isLinearExercise(activeEx) || isSortingExercise(activeEx) || isSearchExercise(activeEx)) return null;
+    if (!activeEx || isLinearExercise(activeEx) || isSortingExercise(activeEx)) return null;
     const root = buildExpected(activeEx.treeType, activeEx.dataset, activeEx.dataType);
     const flat = toFlat(root);
     const props = computeProps(root, settings.heightMode, settings.rootIsInternal);
@@ -111,7 +109,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
       alert('Por favor selecciona un grupo para asignar la actividad.');
       return;
     }
-    const linearErrors = exercises.flatMap(ex => [...linearExerciseErrors(ex), ...sortingErrors(ex), ...searchErrors(ex)]);
+    const linearErrors = exercises.flatMap(ex => [...linearExerciseErrors(ex), ...sortingErrors(ex)]);
     if (linearErrors.length > 0) {
       alert('Corrige estos ejercicios antes de publicar:\n\n' + linearErrors.slice(0, 8).join('\n'));
       return;
@@ -142,7 +140,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
     <div className="space-y-6">
       <PageHeader
         title={activityToEdit ? 'Editar Actividad' : 'Nueva Actividad'}
-        subtitle="Configura ejercicios de búsqueda, tablas hash, ordenamiento, árboles o estructuras lineales y revisa la solución esperada en tiempo real."
+        subtitle="Configura ejercicios de ordenamiento, árboles o estructuras lineales y revisa la solución esperada en tiempo real."
         actions={
           <div className="flex gap-2">
             <button onClick={onCancel} className="btn-ghost">
@@ -383,12 +381,6 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
           if (!title.trim()) setTitle('Algoritmos de ordenamiento');
         }}>Plantilla: los 10 algoritmos de ordenamiento</button>}
         <button type="button" className="btn-secondary" onClick={() => { setExercises(prev => [...prev,newSortingExercise('BUBBLE')]);setSelectedExIndex(exercises.length); }}>+ Ejercicio de ordenamiento</button>
-        {!activityToEdit && <button type="button" className="btn-secondary" onClick={() => {
-          if(!window.confirm('Reemplazar los ejercicios de este formulario por búsqueda binaria y encadenamiento separado, con inserción y búsqueda. ¿Continuar?'))return;
-          setExercises([newSearchExercise('BINARY'),newSearchExercise('CHAINING')]);setSelectedExIndex(0);if(!title.trim())setTitle('Búsqueda binaria y encadenamiento separado');
-        }}>Plantilla: búsqueda binaria y encadenamiento</button>}
-        <button type="button" className="btn-secondary" onClick={() => {setExercises(prev=>[...prev,newSearchExercise('BINARY')]);setSelectedExIndex(exercises.length);}}>+ Búsqueda binaria</button>
-        <button type="button" className="btn-secondary" onClick={() => {setExercises(prev=>[...prev,newSearchExercise('CHAINING')]);setSelectedExIndex(exercises.length);}}>+ Encadenamiento separado</button>
         {/* Pestañas de Ejercicios */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {exercises.map((ex, idx) => (
@@ -422,7 +414,7 @@ export function ActivityBuilder({ groups, activityToEdit, onSaved, onCancel }: P
         </div>
 
         {/* Editor del Ejercicio Seleccionado + Vista Previa Canónica */}
-        {isSearchExercise(activeEx) ? <SearchExerciseEditor key={activeEx.id} exercise={activeEx} onChange={updateActiveEx}/> : isSortingExercise(activeEx) ? <SortingExerciseEditor key={activeEx.id} exercise={activeEx} onChange={updateActiveEx}/> : isLinearExercise(activeEx) ? (
+        {isSortingExercise(activeEx) ? <SortingExerciseEditor key={activeEx.id} exercise={activeEx} onChange={updateActiveEx}/> : isLinearExercise(activeEx) ? (
           <LinearExerciseEditor key={activeEx.id} exercise={activeEx} onChange={updateActiveEx} />
         ) : (
         <div className="grid gap-6 lg:grid-cols-2">

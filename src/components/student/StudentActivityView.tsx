@@ -1,5 +1,3 @@
-import {isSearchExercise,evaluateSearch,validSearchDraft,type SearchDraft} from '../../lib/search/search';
-import {SearchExercisePanel} from './SearchExercisePanel';
 import { isSortingExercise, evaluateSorting, validSortingDraft, type SortDraft } from '../../lib/sorting/sorting';
 import { SortingExercisePanel } from './SortingExercisePanel';
 import { useEffect, useMemo, useState } from 'react';
@@ -45,13 +43,11 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
   const [lastEval, setLastEval] = useState<Evaluation | null>(null);
   const [currentLinear, setCurrentLinear] = useState<LinearAnswers>(EMPTY_LINEAR_ANSWERS);
   const [lastLinearEval, setLastLinearEval] = useState<LinearEvaluation | null>(null);
-  const [currentSearch,setCurrentSearch] = useState<SearchDraft>({version:1,actions:[]});
   const [currentSorting, setCurrentSorting] = useState<SortDraft>({version:1,actions:[]});
   const [currentAttempts, setCurrentAttempts] = useState(0);
 
   const activeExercise = activity.exercises[activeExIndex] || activity.exercises[0];
   const exId = activeExercise?.id;
-  const isSearch = isSearchExercise(activeExercise);
   const isSorting = isSortingExercise(activeExercise);
   const isLinear = isLinearExercise(activeExercise);
 
@@ -82,15 +78,11 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
         const fallback=submission?.exercisesData?.[exId]?.sortingDraft;
         setCurrentSorting(validSortingDraft(fallback)?fallback:{version:1,actions:[]});
       } else setCurrentSorting(remoteData.sortingDraft || {version:1,actions:[]});
-      if(remoteData.searchDraft && !validSearchDraft(remoteData.searchDraft)) {
-        setDraftError(true);const fallback=submission?.exercisesData?.[exId]?.searchDraft;
-        setCurrentSearch(validSearchDraft(fallback)?fallback:{version:1,actions:[]});
-      } else setCurrentSearch(remoteData.searchDraft || {version:1,actions:[]});
       setCurrentAttempts(remoteData.attempts ?? 0);
       if (remoteData.score !== undefined && isLinearExercise(activeExercise)) {
         setLastLinearEval(evaluateLinear(activeExercise, remoteData.linearAnswers));
         setLastEval(null);
-      } else if (remoteData.score !== undefined && !isSortingExercise(activeExercise) && !isSearchExercise(activeExercise)) {
+      } else if (remoteData.score !== undefined && !isSortingExercise(activeExercise)) {
         setLastEval(evaluateExercise(activeExercise, activity.settings, remoteData.tree, remoteData.answers));
         setLastLinearEval(null);
       } else {
@@ -105,7 +97,6 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
     setCurrentAnswers(EMPTY_ANSWERS);
     setCurrentLinear(EMPTY_LINEAR_ANSWERS);
     setCurrentSorting({version:1,actions:[]});
-    setCurrentSearch({version:1,actions:[]});
     setCurrentAttempts(0);
     setLastEval(null);
     setLastLinearEval(null);
@@ -120,7 +111,6 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
     overrideAttempts?: number,
     saveToCloud = false,
     sortingDraft = currentSorting,
-    searchDraft = currentSearch,
   ) => {
     let localData: ExerciseSubmission | undefined;
     try {
@@ -140,7 +130,6 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
       answers,
       ...(isLinear ? { linearAnswers } : {}),
       ...(isSorting ? { sortingDraft } : {}),
-      ...(isSearch ? { searchDraft } : {}),
       updatedAt: now,
       submitted: centralEnabled ? (prevSub?.submitted ?? false) : !!evalRes || (prevSub?.submitted ?? false),
       attempts: centralEnabled ? (prevSub?.attempts ?? currentAttempts) : resolvedAttempts,
@@ -250,7 +239,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
                 )}
               </div>
               <div className="text-xs text-text-muted">
-                {isSearch ? <span>Sigue el procedimiento y consulta «Explicación y algoritmo».</span> : isSorting ? <span>Ordena siguiendo el procedimiento de cada algoritmo. Consulta «Leer algoritmo» para ver su pseudocódigo.</span> : isLinear ? (
+                {isSorting ? <span>Ordena siguiendo el procedimiento de cada algoritmo. Consulta «Leer algoritmo» para ver su pseudocódigo.</span> : isLinear ? (
                   <>
                     Estructura:{' '}
                     <span className="font-semibold text-primary">
@@ -274,7 +263,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
           </div>
 
           {/* Selector de Vistas en Móvil */}
-          <div className={cx('flex rounded-full border border-outline bg-surface-variant p-1 sm:hidden', (isLinear || isSorting || isSearch) && '!hidden')}>
+          <div className={cx('flex rounded-full border border-outline bg-surface-variant p-1 sm:hidden', (isLinear || isSorting) && '!hidden')}>
             <button
               onClick={() => setMobileTab('tree')}
               className={cx(
@@ -357,7 +346,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
         </div>
 
         {/* Chips del Conjunto de Datos de Referencia */}
-        {!isLinear && !isSorting && !isSearch && (
+        {!isLinear && !isSorting && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 pt-1 border-t border-outline">
           <span className="text-xs font-medium text-text-muted">Datos a insertar:</span>
           {activeExercise.dataset.map((val, i) => {
@@ -385,14 +374,7 @@ export function StudentActivityView({ activity, submission, onBack }: Props) {
         )}
       </div>
 
-      {isSearch ? <div className="relative flex-1 overflow-y-auto"><SearchExercisePanel key={activeExercise.id}
-        exercise={activeExercise} draft={currentSearch} readOnly={isReadOnly} showFeedback={activity.settings.showFeedback}
-        score={submission?.exercisesData[exId]?.score} attempts={currentAttempts} maxAttempts={maxAttempts}
-        canRestart={submission?.exercisesData[exId]?.score !== undefined && JSON.stringify(currentSearch)===JSON.stringify(submission?.exercisesData[exId]?.searchDraft)}
-        onRestart={()=>{const next:SearchDraft={version:1,actions:[]};setCurrentSearch(next);persistChanges(currentTree,currentAnswers,currentLinear,undefined,currentAttempts,false,currentSorting,next);}}
-        onChange={next=>{setCurrentSearch(next);persistChanges(currentTree,currentAnswers,currentLinear,undefined,currentAttempts,false,currentSorting,next);}}
-        onEvaluate={()=>{const result=evaluateSearch(activeExercise,currentSearch);const next=currentAttempts+1;if(!centralEnabled)setCurrentAttempts(next);persistChanges(currentTree,currentAnswers,currentLinear,result,next);}}
-      /></div> : isSorting ? <div className="relative flex-1 overflow-y-auto"><SortingExercisePanel
+      {isSorting ? <div className="relative flex-1 overflow-y-auto"><SortingExercisePanel
         key={activeExercise.id} exercise={activeExercise} draft={currentSorting}
         readOnly={isReadOnly} showFeedback={activity.settings.showFeedback}
         score={submission?.exercisesData[exId]?.score} attempts={currentAttempts} maxAttempts={maxAttempts}
