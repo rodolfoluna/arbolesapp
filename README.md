@@ -1,5 +1,10 @@
 # 🌳 Estructura de Datos APP (PWA Offline-First)
 
+La única rama de desarrollo y publicación es `main`. GitHub Pages publica el
+frontend desde esa rama y el servicio `arboles-api` de Render también la usa como
+origen (con despliegue manual). El acceso público actual usa Aula Identidad;
+consulta [la integración y operación del backend](docs/AULA_IDENTIDAD.md).
+
 Aplicación Web Progresiva (**PWA**) instalable en celulares, laptops y computadoras para la enseñanza, construcción interactiva y evaluación automática de **Árboles** (Binario por niveles, BST y AVL) y **Estructuras Lineales** (Listas, Pilas y Colas con simulación secuencial de operaciones).
 
 Permite construir ejercicios y guardar borradores en el dispositivo. En el acceso Firebase anterior, evaluar o pulsar **Guardar en la nube** envía las respuestas mediante la cola persistente de Firestore, también tras recuperar conexión. El modo **Aula Identidad** conserva los borradores, pero exige validar el acceso en línea antes de enviar. La PWA se publica en **GitHub Pages**.

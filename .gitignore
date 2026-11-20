@@ -19,6 +19,11 @@ migration-private/
 *service-account*.json
 *firebase-admin*.json
 
+# Informes históricos conservados solo en local por decisión del propietario.
+/QA.md
+/MEDICION_FIREBASE.md
+/FIREBASE_MEDICION_2026-10-17.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
