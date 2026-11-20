@@ -39,7 +39,3 @@ La matriz conserva el formato de las entregas anteriores y añade el detalle del
 `http://127.0.0.1:5180/tools/search-preview.html` con Vite abierto en ese puerto. Este laboratorio no importa Firebase ni autenticación y no crea actividades reales. Las pruebas de navegador verifican un cálculo hash incorrecto, su corrección, dos claves colisionando en la misma cubeta y el avance de un intervalo binario. Los tests automatizados cubren extremos, ausencias, cubeta vacía, colisiones, prevención de saltos, validación, nota e intentos en servidor, reanudación, fallo de envío y constructor docente.
 
 El despliegue debe actualizar primero el backend de Render y después GitHub Pages. No requiere migración de datos ni cambios de reglas Firestore.
-
-## Validación y publicación
-
-Versión del 18 de noviembre de 2026: 215 pruebas aprobadas en 25 archivos, TypeScript de frontend/backend y compilación central correctos, revisión del bundle público aprobada. El backend de Render y GitHub Pages quedaron desplegados con el commit `2312465`. Se confirmó HTTP 200, presencia de ambos tipos y explicaciones en el bundle, ingreso docente y nuevos controles del constructor público. El ensayo de tarjetas, función hash, colisiones y límites binarios se realizó en el laboratorio local aislado. No se crearon actividades ni entregas académicas reales. El respaldo posterior confirmó idénticos los dos grupos, las tres actividades, las 88 entregas, los 33 vínculos y todas las membresías.
